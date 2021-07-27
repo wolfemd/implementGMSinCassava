@@ -1,0 +1,574 @@
+---
+title: "Extract VCF from PHG and prepare files for downstream use"
+author: "Marnin Wolfe"
+date: "2021-July-25"
+output: 
+  workflowr::wflow_html:
+    toc: true
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = F, 
+                      tidy='styler', tidy.opts=list(strict=FALSE,width.cutoff=100), highlight=TRUE)
+```
+
+# Previous step
+
+3.  [Validate the pedigree obtained from cassavabase](03-validatePedigree.html): Before setting up a cross-validation scheme for predictions that depend on a correct pedigree, add a basic verification step to the pipeline. Not trying to fill unknown or otherwise correct the pedigree. Assess evidence that relationship is correct, remove if incorrect.
+
+# Extra VCF from PHG database
+
+From Evan Long
+
+> I put the db and config file on workdir of cbsurobbins this command with tassel should export the VCF (Marnin_imputation.vcf) \
+> `/workdir/Cassava_HMII_V3_Marning_imputation_6-18-21.db` `/workdir/config.txt`
+>
+> Just got to give path to tassel (I would download a recent version of Tassel5 if you haven't done so) \
+> `./tassel-5-standalone/run_pipeline.pl -Xmx10g -debug -configParameters config.txt -HaplotypeGraphBuilderPlugin -configFile config.txt -includeSequences false -includeVariantContexts true -methods genome_upgma_0.001  -endPlugin -ImportDiploidPathPlugin -pathMethodName Marnin_imputation -endPlugin -PathsToVCFPlugin -outputFile Marnin_imputation -endPlugin`
+
+```{bash, eval=F}
+# copy from cbsurobbins workdir to my networked storage
+cp config.txt ~/
+cp Cassava_HMII_V3_Marning_imputation_6-18-21.db ~/
+```
+
+Since Evan was worried about memory, grab a large mem. machine for myself.
+
+cbsulm14...
+```{bash call tassel - R1, eval=F}
+cd /workdir/
+mkdir mw489/
+cp ~/config.txt /workdir/mw489/
+cp ~/Cassava_HMII_V3_Marning_imputation_6-18-21.db /workdir/mw489/
+
+screen;
+
+cd /workdir/mw489/
+git clone https://bitbucket.org/tasseladmin/tassel-5-standalone.git
+
+./tassel-5-standalone/run_pipeline.pl -Xmx500g -debug -configParameters config.txt -HaplotypeGraphBuilderPlugin -configFile config.txt -includeSequences false -includeVariantContexts true -methods genome_upgma_0.001  -endPlugin -ImportDiploidPathPlugin -pathMethodName Marnin_imputation -endPlugin -PathsToVCFPlugin -outputFile Cassava_HMII_V3_Marning_imputation_6-18-21 -endPlugin
+
+cp Cassava_HMII_V3_Marning_imputation_6-18-21.vcf.gz /home/mw489/implementGMSinCassava/data/
+```
+```{bash relevent stdout, eval=F}
+[mw489@cbsulm14 mw489]$ ./tassel-5-standalone/run_pipeline.pl -Xmx500g -debug -configParameters config.txt -HaplotypeGraphBuilderPlugin -configFile config.txt -includeSequences false -includeVariantContexts true -methods genome_upgma_0.001  -endPlugin -ImportDiploidPathPlugin -pathMethodName Marnin_imputation -endPlugin -PathsToVCFPlugin -outputFile Cassava_HMII_V3_Marning_imputation_6-18-21 -endPlugin
+
+./tassel-5-standalone/lib/ahocorasick-0.2.4.jar:./tassel-5-standalone/lib/biojava-alignment-4.0.0.jar:./tassel-5-standalone/lib/biojava-core-4.0.0.jar:./tassel-5-standalone/lib/biojava-phylo-4.0.0.jar:./tassel-5-standalone/lib/colt-1.2.0.jar:./tassel-5-standalone/lib/commons-codec-1.10.jar:./tassel-5-standalone/lib/commons-math3-3.4.1.jar:./tassel-5-standalone/lib/ejml-0.23.jar:./tassel-5-standalone/lib/fastutil-8.2.2.jar:./tassel-5-standalone/lib/forester-1.038.jar:./tassel-5-standalone/lib/gs-core-1.3.jar:./tassel-5-standalone/lib/gs-ui-1.3.jar:./tassel-5-standalone/lib/guava-22.0.jar:./tassel-5-standalone/lib/htsjdk-2.23.0.jar:./tassel-5-standalone/lib/ini4j-0.5.4.jar:./tassel-5-standalone/lib/itextpdf-5.1.0.jar:./tassel-5-standalone/lib/javax.json-1.0.4.jar:./tassel-5-standalone/lib/jcommon-1.0.23.jar:./tassel-5-standalone/lib/jfreechart-1.0.19.jar:./tassel-5-standalone/lib/jfreesvg-3.2.jar:./tassel-5-standalone/lib/jhdf5-14.12.5.jar:./tassel-5-standalone/lib/json-simple-1.1.1.jar:./tassel-5-standalone/lib/junit-4.10.jar:./tassel-5-standalone/lib/kotlin-stdlib-1.4.32.jar:./tassel-5-standalone/lib/kotlin-stdlib-jdk7-1.4.32.jar:./tassel-5-standalone/lib/kotlin-stdlib-jdk8-1.4.32.jar:./tassel-5-standalone/lib/kotlinx-coroutines-core-jvm-1.4.3.jar:./tassel-5-standalone/lib/log4j-1.2.13.jar:./tassel-5-standalone/lib/mail-1.4.jar:./tassel-5-standalone/lib/phg.jar:./tassel-5-standalone/lib/postgresql-9.4-1201.jdbc41.jar:./tassel-5-standalone/lib/scala-library-2.10.1.jar:./tassel-5-standalone/lib/slf4j-api-1.7.10.jar:./tassel-5-standalone/lib/slf4j-simple-1.7.10.jar:./tassel-5-standalone/lib/snappy-java-1.1.1.6.jar:./tassel-5-standalone/lib/sqlite-jdbc-3.8.5-pre1.jar:./tassel-5-standalone/lib/trove-3.0.3.jar:./tassel-5-standalone/sTASSEL.jar
+Memory Settings: -Xms512m -Xmx500g
+Tassel Pipeline Arguments: -debug -configParameters config.txt -HaplotypeGraphBuilderPlugin -configFile config.txt -includeSequences false -includeVariantContexts true -methods genome_upgma_0.001 -endPlugin -ImportDiploidPathPlugin -pathMethodName Marnin_imputation -endPlugin -PathsToVCFPlugin -outputFile Cassava_HMII_V3_Marning_imputation_6-18-21 -endPlugin
+[main] INFO net.maizegenetics.plugindef.ParameterCache - load: loading parameter cache with: config.txt
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: Xmx value: 100G
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: DP_poisson_max value: .99
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: mapQ value: 48
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: splitTaxa value: false
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: exportMergedVCF value: /tempFileDir/data/outputs/mergedVCFs/
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: sentieon_license value: cbsulogin2.tc.cornell.edu:8990
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: maxNodesPerRange value: 30
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: DP_poisson_min value: .05
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: mxDiv value: .001
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: password value: sqlite
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: includeVariantContexts value: true
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: configFile value: config.txt
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: host value: localHost
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: DBtype value: sqlite
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: probCorrect value: 0.95
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: replaceNsWithMajor value: false
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: minReads value: 0
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: useDepth value: false
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: minTaxa value: 1
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: minTaxaPerRange value: 1
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: method value: upgma
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: emissionMethod value: allCounts
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: maxError value: 0.2
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: includeVariants value: true
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: referenceFasta value: /workdir/eml255/Cassava_PHG_Het/Reference/cassavaV6_chrAndScaffoldsCombined_numeric.fa
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: numThreads value: 20
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: maxReadsPerKB value: 5000
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: GQ_min value: 50
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: minTransitionProb value: 0.001
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: filterHets value: t
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: user value: sqlite
+[main] INFO net.maizegenetics.plugindef.ParameterCache - ParameterCache: key: DB value: Cassava_HMII_V3_Marning_imputation_6-18-21.db
+[main] INFO net.maizegenetics.tassel.TasselLogging - Tassel Version: 5.2.73  Date: June 23, 2021
+[main] INFO net.maizegenetics.tassel.TasselLogging - Max Available Memory Reported by JVM: 512000 MB
+[main] INFO net.maizegenetics.tassel.TasselLogging - Java Version: 13.0.2
+[main] INFO net.maizegenetics.tassel.TasselLogging - OS: Linux
+[main] INFO net.maizegenetics.tassel.TasselLogging - Number of Processors: 112
+[main] INFO net.maizegenetics.pipeline.TasselPipeline - Tassel Pipeline Arguments: [-fork1, -HaplotypeGraphBuilderPlugin, -configFile, config.txt, -includeSequences, false, -includeVariantContexts, true, -methods, genome_upgma_0.001, -endPlugin, -ImportDiploidPathPlugin, -pathMethodName, Marnin_imputation, -endPlugin, -PathsToVCFPlugin, -outputFile, Cassava_HMII_V3_Marning_imputation_6-18-21, -endPlugin, -runfork1]
+net.maizegenetics.pangenome.api.HaplotypeGraphBuilderPlugin
+   net.maizegenetics.pangenome.hapCalling.ImportDiploidPathPlugin
+      net.maizegenetics.pangenome.hapCalling.PathsToVCFPlugin
+[pool-1-thread-1] INFO net.maizegenetics.plugindef.AbstractPlugin - Starting net.maizegenetics.pangenome.api.HaplotypeGraphBuilderPlugin: time: Jul 25, 2021 20:11:1
+[pool-1-thread-1] INFO net.maizegenetics.plugindef.AbstractPlugin -
+HaplotypeGraphBuilderPlugin Parameters
+configFile: config.txt
+methods: genome_upgma_0.001
+includeSequences: false
+includeVariantContexts: true
+haplotypeIds: null
+chromosomes: null
+taxa: null
+
+[pool-1-thread-1] INFO net.maizegenetics.pangenome.db_loading.DBLoadingUtils - first connection: dbName from config file = Cassava_HMII_V3_Marning_imputation_6-18-21.db host: localHost user: sqlite type: sqlite
+[pool-1-thread-1] INFO net.maizegenetics.pangenome.db_loading.DBLoadingUtils - Database URL: jdbc:sqlite:Cassava_HMII_V3_Marning_imputation_6-18-21.db
+[pool-1-thread-1] INFO net.maizegenetics.pangenome.db_loading.DBLoadingUtils - Connected to database:
+
+[pool-1-thread-1] INFO net.maizegenetics.pangenome.api.CreateGraphUtils - referenceRangesAsMap: query statement: select reference_ranges.ref_range_id, chrom, range_start, range_end, methods.name from reference_ranges  INNER JOIN ref_range_ref_range_method on ref_range_ref_range_method.ref_range_id=reference_ranges.ref_range_id  INNER JOIN methods on ref_range_ref_range_method.method_id = methods.method_id  AND methods.method_type = 7 ORDER BY reference_ranges.ref_range_id
+methods size: 1
+[pool-1-thread-1] INFO net.maizegenetics.pangenome.api.CreateGraphUtils - referenceRangesAsMap: number of reference ranges: 65891
+[pool-1-thread-1] INFO net.maizegenetics.pangenome.api.CreateGraphUtils - referenceRangesAsMap: time: 0.442794469 secs.
+[pool-1-thread-1] INFO net.maizegenetics.pangenome.api.CreateGraphUtils - taxaListMap: query statement: SELECT gamete_haplotypes.gamete_grp_id, genotypes.line_name FROM gamete_haplotypes INNER JOIN gametes ON gamete_haplotypes.gameteid = gametes.gameteid INNER JOIN genotypes on gametes.genoid = genotypes.genoid ORDER BY gamete_haplotypes.gamete_grp_id;
+[pool-1-thread-1] INFO net.maizegenetics.pangenome.api.CreateGraphUtils - taxaListMap: number of taxa lists: 70797
+[pool-1-thread-1] INFO net.maizegenetics.pangenome.api.CreateGraphUtils - taxaListMap: time: 3.342730091 secs.
+[pool-1-thread-1] INFO net.maizegenetics.pangenome.api.VariantUtils - variantIdsToVariantMap: query statement: SELECT variant_id, chrom, position, ref_allele_id, alt_allele_id FROM variants;
+[pool-1-thread-1] INFO net.maizegenetics.pangenome.api.CreateGraphUtils - createHaplotypeNodes: haplotype method: genome_upgma_0.001 range group method: null
+[pool-1-thread-1] INFO net.maizegenetics.pangenome.api.CreateGraphUtils - createHaplotypeNodes: query statement: SELECT haplotypes_id, gamete_grp_id, haplotypes.ref_range_id, asm_contig, asm_start_coordinate, asm_end_coordinate, genome_file_id, seq_hash, seq_len, variant_list FROM haplotypes WHERE method_id = 9;
+[pool-1-thread-1] INFO net.maizegenetics.pangenome.api.CreateGraphUtils - addNodes: number of nodes: 282582
+[pool-1-thread-1] INFO net.maizegenetics.pangenome.api.CreateGraphUtils - addNodes: number of reference ranges: 32493
+[pool-1-thread-1] INFO net.maizegenetics.pangenome.api.CreateGraphUtils - createHaplotypeNodes: time: 77.564658867 secs.
+[pool-1-thread-1] INFO net.maizegenetics.pangenome.api.HaplotypeGraph - Created graph edges: created when requested  number of nodes: 282582  number of reference ranges: 32493
+[pool-1-thread-1] INFO net.maizegenetics.plugindef.AbstractPlugin - Finished net.maizegenetics.pangenome.api.HaplotypeGraphBuilderPlugin: time: Jul 25, 2021 20:12:26
+[pool-1-thread-1] INFO net.maizegenetics.plugindef.AbstractPlugin - Starting net.maizegenetics.pangenome.hapCalling.ImportDiploidPathPlugin: time: Jul 25, 2021 20:12:26
+[pool-1-thread-1] INFO net.maizegenetics.plugindef.AbstractPlugin -
+ImportDiploidPathPlugin Parameters
+pathMethodName: Marnin_imputation
+
+[pool-1-thread-1] INFO net.maizegenetics.pangenome.db_loading.DBLoadingUtils - first connection: dbName from config file = Cassava_HMII_V3_Marning_imputation_6-18-21.db host: localHost user: sqlite type: sqlite
+[pool-1-thread-1] INFO net.maizegenetics.pangenome.db_loading.DBLoadingUtils - Database URL: jdbc:sqlite:Cassava_HMII_V3_Marning_imputation_6-18-21.db
+[pool-1-thread-1] INFO net.maizegenetics.pangenome.db_loading.DBLoadingUtils - Connected to database:
+
+[pool-1-thread-1] INFO net.maizegenetics.pangenome.hapCalling.ImportDiploidPathPlugin - importPathsFromDB: query: SELECT line_name, paths_data FROM paths, genotypes, methods WHERE paths.genoid=genotypes.genoid AND methods.method_id=paths.method_id AND methods.name='Marnin_imputation'
+[pool-1-thread-1] INFO net.maizegenetics.pangenome.hapCalling.ImportDiploidPathPlugin - importPathsFromDB: number of path list: 12140
+[pool-1-thread-1] INFO net.maizegenetics.plugindef.AbstractPlugin - Finished net.maizegenetics.pangenome.hapCalling.ImportDiploidPathPlugin: time: Jul 25, 2021 20:34:27
+[pool-1-thread-1] INFO net.maizegenetics.plugindef.AbstractPlugin - Starting net.maizegenetics.pangenome.hapCalling.PathsToVCFPlugin: time: Jul 25, 2021 20:34:27
+[pool-1-thread-1] INFO net.maizegenetics.plugindef.AbstractPlugin -
+PathsToVCFPlugin Parameters
+outputFile: Cassava_HMII_V3_Marning_imputation_6-18-21.vcf
+refRangeFileVCF: null
+referenceFasta: /workdir/eml255/Cassava_PHG_Het/Reference/cassavaV6_chrAndScaffoldsCombined_numeric.fa
+makeDiploid: true
+positions: null
+
+[pool-1-thread-1] ERROR net.maizegenetics.plugindef.AbstractPlugin - -referenceFasta: /workdir/eml255/Cassava_PHG_Het/Reference/cassavaV6_chrAndScaffoldsCombined_numeric.fa doesn't exist
+
+[pool-1-thread-1] INFO net.maizegenetics.plugindef.AbstractPlugin -
+Usage:
+PathsToVCFPlugin <options>
+-outputFile <Output VCF File Name> : Output file name (required)
+-refRangeFileVCF <Reference Range File> : Reference Range file used to subset the paths for only specified regions of the genome.
+-referenceFasta <Reference Genome> : Reference Genome.
+-makeDiploid <true | false> : Whether to report haploid paths as homozygousdiploid (Default: true)
+-positions <Position List> : Positions to include in VCF. Can be specified by Genotype file (i.e. VCF, Hapmap, etc.), bed file, or json file containing the requested positions.
+
+[mw489@cbsulm14 mw489]$ pwd
+/workdir/mw489
+[mw489@cbsulm14 mw489]$ ls -lht
+total 22G
+drwxrwxr-x 6 mw489 mw489 4.0K Jul 25 20:09 tassel-5-standalone
+-rwxr-x--- 1 mw489 mw489  22G Jul 25 20:03 Cassava_HMII_V3_Marning_imputation_6-18-21.db
+-rwxr-x--- 1 mw489 mw489 1.3K Jul 25 20:02 config.txt
+[mw489@cbsulm14 mw489]$ 
+
+```
+```{bash copy the FA i need, eval=F}
+cp /workdir/eml255/Cassava_PHG_Het/Reference/cassavaV6_chrAndScaffoldsCombined_numeric.fa ~/
+```
+
+cbsulm08...
+```{bash call tassel - R2, eval=F}
+cd /workdir/
+mkdir mw489/
+cp ~/config_mw.txt /workdir/mw489/
+cp ~/Cassava_HMII_V3_Marning_imputation_6-18-21.db /workdir/mw489/
+cp ~/cassavaV6_chrAndScaffoldsCombined_numeric.fa /workdir/mw489/
+
+screen;
+
+cd /workdir/mw489/;
+git clone https://bitbucket.org/tasseladmin/tassel-5-standalone.git;
+
+./tassel-5-standalone/run_pipeline.pl -Xmx500g -debug \
+  -configParameters config_mw.txt \
+  -HaplotypeGraphBuilderPlugin -configFile config_mw.txt \
+    -includeSequences false \
+    -includeVariantContexts true \
+    -methods genome_upgma_0.001 \
+    -endPlugin \
+  -ImportDiploidPathPlugin \
+    -pathMethodName Marnin_imputation \
+    -endPlugin \
+  -PathsToVCFPlugin \
+    -outputFile Cassava_HMII_V3_Marning_imputation_6-18-21 \
+    -endPlugin > extract_vcf_from_phg.log
+
+cp Cassava_HMII_V3_Marning_imputation_6-18-21.vcf.gz /home/mw489/implementGMSinCassava/data/
+```
+**FAILS**: not enough memory. Wrote a `*.vcf` with 12140 indivs and 184032 sites. Evan informs to expect ~4M sites. It terimnated on Chr. 1.
+
+Get the sample list using `bcftools query`.
+```{bash get sample list from truncated VCF, eval=F}
+bcftools query --list-samples Cassava_HMII_V3_Marning_imputation_6-18-21.vcf > Cassava_HMII_V3_Marning_imputation_6-18-21.samples
+cp Cassava_HMII_V3_Marning_imputation_6-18-21.samples ~/
+cp ~/Cassava_HMII_V3_Marning_imputation_6-18-21.samples ~/implementGMSinCassava/output/
+```
+This is just precautionary. I want to manually compare to the list of taxa I need, then break the job up accordingly. A future pipeline wouldn't need (or would arleady have) this taxa list.
+
+```{r on 1303 of my samples match pgh?, message=F, warning=F}
+library(tidyverse); library(magrittr)
+samples2keep<-read.table(here::here("output","samples2keep_IITA_2021May13.txt"),
+                         header = F, stringsAsFactors = F)$V2
+phg_samples<-read.table(here::here("output","Cassava_HMII_V3_Marning_imputation_6-18-21.samples"),
+                         header = F, stringsAsFactors = F)$V1
+table(samples2keep %in% phg_samples)
+```
+
+```{r example of sample names that do match}
+samples2keep[samples2keep %in% phg_samples][1:10]
+```
+```{r example of my sample names that don't}
+samples2keep[!samples2keep %in% phg_samples][1:10]
+```
+```{r example of PHG sample names that don't}
+phg_samples[!phg_samples %in% samples2keep][1:10]
+```
+
+```{r samples with a match}
+samples2keep %>% 
+  tibble(FullSampleName=.) %>% 
+  separate(FullSampleName,c("SampleID","GBS_ID"),":",remove = F) %>% 
+  semi_join(tibble(SampleID=phg_samples))
+```
+```{r samples with no match}
+samples2keep %>% 
+  tibble(FullSampleName=.) %>% 
+  separate(FullSampleName,c("SampleID","GBS_ID"),":",remove = F) %>% 
+  anti_join(tibble(SampleID=phg_samples))
+```
+```{r write samples2keep_notInPHGdb.txt for Evan}
+samples2keep %>% 
+  tibble(FullSampleName=.) %>% 
+  separate(FullSampleName,c("SampleID","GBS_ID"),":",remove = F) %>% 
+  anti_join(tibble(SampleID=phg_samples))  %$% 
+  FullSampleName %>% 
+  write.table(.,here::here("output","samples2keep_notInPHGdb.txt"),row.names = F, col.names = F, quote = F)
+```
+
+
+# Haplotype matrix from phased VCF
+
+Extract haps from VCF with `bcftools`
+
+```{r, eval=F}
+library(tidyverse); library(magrittr)
+pathIn<-"/home/jj332_cas/marnin/implementGMSinCassava/data/"
+pathOut<-pathIn
+vcfName<-"AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719"
+system(paste0("bcftools convert --hapsample ",
+              pathOut,vcfName," ",
+              pathIn,vcfName,".vcf.gz "))
+```
+
+Read haps to R
+
+```{r, eval=F}
+library(data.table)
+haps<-fread(paste0(pathIn,vcfName,".hap.gz"),
+            stringsAsFactors = F,header = F) %>% 
+  as.data.frame
+sampleids<-fread(paste0(pathIn,vcfName,".sample"),
+                 stringsAsFactors = F,header = F,skip = 2) %>% 
+  as.data.frame
+```
+
+**Extract needed GIDs from BLUPs and pedigree:** Subset to: (1) genotyped-plus-phenotyped and/or (2) in verified pedigree.
+
+```{r, eval=F}
+blups<-readRDS(file=here::here("output",
+                               "IITA_blupsForModelTraining_twostage_asreml_2021May10.rds"))
+blups %>% 
+  select(Trait,blups) %>% 
+  unnest(blups) %>% 
+  distinct(GID) %$% GID -> gidWithBLUPs
+
+genotypedWithBLUPs<-gidWithBLUPs[gidWithBLUPs %in% sampleids$V1]
+length(genotypedWithBLUPs) # 7960
+
+ped<-read.table(here::here("output","verified_ped.txt"),
+                header = T, stringsAsFactors = F)
+
+pednames<-union(ped$FullSampleName,
+                union(ped$SireID,ped$DamID))
+length(pednames) # 4384
+
+samples2keep<-union(genotypedWithBLUPs,pednames)
+length(samples2keep) # 8013
+
+# write a sample list to disk for downstream purposes
+# format suitable for subsetting with --keep in plink
+write.table(tibble(FID=0,IID=samples2keep),
+            file=here::here("output","samples2keep_IITA_2021May13.txt"),
+            row.names = F, col.names = F, quote = F)
+```
+
+Add sample ID's
+
+```{r, eval=F}
+hapids<-sampleids %>% 
+  select(V1,V2) %>% 
+  mutate(SampleIndex=1:nrow(.)) %>% 
+  rename(HapA=V1,HapB=V2) %>% 
+  pivot_longer(cols=c(HapA,HapB),
+               names_to = "Haplo",values_to = "SampleID") %>% 
+  mutate(HapID=paste0(SampleID,"_",Haplo)) %>% 
+  arrange(SampleIndex)
+colnames(haps)<-c("Chr","HAP_ID","Pos","REF","ALT",hapids$HapID)
+```
+
+Subset haps
+
+```{r, eval=F}
+hapids2keep<-hapids %>% filter(SampleID %in% samples2keep)
+hapids2keep$HapID
+dim(haps) # [1] 68814 43717
+haps<-haps[,c("Chr","HAP_ID","Pos","REF","ALT",hapids2keep$HapID)]
+dim(haps) # [1] 68814 16031
+```
+
+Format, transpose, convert to matrix and save!
+
+```{r, eval=F}
+haps %<>% 
+  mutate(HAP_ID=gsub(":","_",HAP_ID)) %>% 
+  column_to_rownames(var = "HAP_ID") %>% 
+  select(-Chr,-Pos,-REF,-ALT)
+haps %<>% t(.) %>% as.matrix(.)
+saveRDS(haps,file=here::here("data","haps_IITA_2021May13.rds")
+```
+
+# Make dosages from haps
+
+To ensure consistency in allele counting, create dosage from haps manually.
+
+```{r, eval=F}
+dosages<-haps %>%
+  as.data.frame(.) %>% 
+  rownames_to_column(var = "GID") %>% 
+  separate(GID,c("SampleID","Haplo"),"_Hap",remove = T) %>% 
+  select(-Haplo) %>% 
+  group_by(SampleID) %>% 
+  summarise(across(everything(),~sum(.))) %>% 
+  ungroup() %>% 
+  column_to_rownames(var = "SampleID") %>% 
+  as.matrix
+saveRDS(dosages,file=here::here("data","dosages_IITA_2021May13.rds"))
+# > dim(dosages)
+# [1]  8013 68814
+```
+
+# Variant filters
+
+**Apply a MAF filter and lightly LD prune:** The number of markers in the "raw" dataset (\~68K) is \~3X the number used in the mate selection paper and I think more than is necessary. There is a burden incurred because we have to compute and store in memory (and on disk) $N_{snp} \times N_{snp}$ recombination frequency matrices.
+
+```{r}
+# library(tidyverse); library(magrittr)
+# pathIn<-"/home/jj332_cas/marnin/implementGMSinCassava/data/"
+# pathOut<-pathIn
+# vcfName<-"AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719"
+# 
+# write.table(tibble(FID=0,IID=samples2keep),
+#             file=here::here("output","samples2keep_IITA_2021May13.txt"),
+#             row.names = F, col.names = F, quote = F)
+# 
+# ped2check<-read.table(file=here::here("output","ped2genos.txt"),
+#                       header = F, stringsAsFactors = F)
+# 
+# # pednames<-union(ped2check$V1,union(ped2check$V2,ped2check$V3)) %>% 
+# #   tibble(FID=0,IID=.)
+# # write.table(pednames,file=here::here("output","pednames2keep.txt"), 
+# #             row.names = F, col.names = F, quote = F)
+```
+
+```{plink, eval=F}
+cd /home/jj332_cas/marnin/implementGMSinCassava/
+export PATH=/programs/plink-1.9-x86_64-beta3.30:$PATH;
+plink --bfile data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719 \
+  --keep output/samples2keep_IITA_2021May13.txt \
+  --maf 0.01 \
+  --indep-pairwise 50 25 0.98 \
+  --out output/samples2keep_IITA_MAFpt01_prune50_25_pt98;
+```
+
+Used plink to output a list of pruned SNPs.
+
+Next, subset the columns of `haps` and `dosages` in R.
+
+```{r, eval=F}
+library(tidyverse); library(magrittr); 
+haps<-readRDS(file=here::here("data","haps_IITA_2021May13.rds"))
+dosages<-readRDS(file=here::here("data","dosages_IITA_2021May13.rds"))
+snps2keep<-read.table(here::here("output",
+                      "samples2keep_IITA_MAFpt01_prune50_25_pt98.prune.in"),
+           header = F, stringsAsFactors = F)
+snps2keep<-tibble(HapSNP_ID=colnames(haps)) %>% 
+  separate(HapSNP_ID,c("Chr","Pos","Ref","Alt"),remove = F) %>% 
+  mutate(SNP_ID=paste0("S",Chr,"_",Pos)) %>% 
+  filter(SNP_ID %in% snps2keep$V1)
+
+haps<-haps[,snps2keep$HapSNP_ID]
+dosages<-dosages[,snps2keep$HapSNP_ID]
+
+# dim(haps); dim(dosages); haps[1:5,1:10]
+
+saveRDS(haps,file=here::here("data","haps_IITA_filtered_2021May13.rds"))
+saveRDS(dosages,file=here::here("data","dosages_IITA_filtered_2021May13.rds"))
+```
+
+# Make Add and Dom GRMs from dosages
+
+```{bash, eval=F}
+# activate multithread OpenBLAS for fast matrix algebra
+export OMP_NUM_THREADS=56
+```
+
+```{r, eval=F}
+dosages<-readRDS(file=here::here("data","dosages_IITA_filtered_2021May13.rds"))
+A<-predCrossVar::kinship(dosages,type="add")
+D<-predCrossVar::kinship(dosages,type="dom")
+saveRDS(A,file=here::here("output","kinship_A_IITA_2021May13.rds"))
+saveRDS(D,file=here::here("output","kinship_D_IITA_2021May13.rds"))
+```
+
+```{bash, eval=F}
+cd /home/mw489/implementGMSinCassava/;
+screen; 
+singularity shell rocker.sif; R
+```
+
+```{r, eval=F}
+dosages<-readRDS(file=here::here("data","dosages_IITA_filtered_2021May13.rds"))
+source(here::here("code","gsFunctions.R"))
+RhpcBLASctl::blas_set_num_threads(56)
+D<-kinship(dosages,type="domGenotypic")
+saveRDS(D,file=here::here("output","kinship_domGenotypic_IITA_2021July5.rds"))
+```
+
+# Genetic Map
+
+```{bash,eval = FALSE}
+cp -r /home/jj332_cas/CassavaGenotypeData/CassavaGeneticMap /home/jj332_cas/marnin/implementGMSinCassava/data/
+```
+
+```{bash, eval=F}
+# activate multithread OpenBLAS for fast matrix algebra
+export OMP_NUM_THREADS=56
+```
+
+[Creating the map used for Beagle-imputation in 2019](https://wolfemd.github.io/NaCRRI_2020GS/Imputation_EastAfrica_StageI_82819.html#Genetic_Map_for_Beagle_-_V2): In 2019, I obtained a ICGMC-derived genetic map, I *think* from Guillaume Bauchet and used it to create a map I've been using for imputation, which has 25K markers (Beagle interpolates the map to the markers genotyped in the panel).
+
+*However,* the recombination frequency matrix and thus cross-variance predictions needs to have all positions for which we have marker effects. It means I have to interpolate a map from the original file `cassava_cM_pred.v6.allchr.txt`. See below:
+
+```{r}
+library(tidyverse); library(magrittr)
+dosages<-readRDS(file=here::here("data","dosages_IITA_filtered_2021May13.rds"))
+# genmap<-tibble(Chr=1:18) %>% 
+#   mutate(geneticMap=map(Chr,~read.table(here::here("data/CassavaGeneticMap",
+#                                                    paste0("chr",.,"_cassava_cM_pred.v6_91019.map")),
+#                                         header = F, stringsAsFactors = F)))
+
+genmap<-read.table(here::here("data/CassavaGeneticMap",
+                              "cassava_cM_pred.v6.allchr.txt"),
+           header = F, stringsAsFactors = F,sep=';') %>% 
+  rename(SNP_ID=V1,Pos=V2,cM=V3) %>% 
+  as_tibble
+
+snps_genmap<-tibble(DoseSNP_ID=colnames(dosages)) %>% 
+  separate(DoseSNP_ID,c("Chr","Pos","Ref","Alt"),remove = F) %>% 
+  mutate(SNP_ID=paste0("S",Chr,"_",Pos)) %>% 
+  left_join(genmap %>% mutate(across(everything(),as.character)))
+# snps_genmap %>% 
+#   ggplot(.,aes(x=as.integer(Pos),y=as.numeric(cM))) + 
+#   geom_point() + 
+#   theme_bw() + 
+#   facet_wrap(~Chr)
+```
+
+```{r}
+interpolate_genmap<-function(data){
+  # for each chromosome map
+  # find and _decrements_ in the genetic map distance
+  # fix them to the cumulative max to force map to be only increasing
+  # fit a spline for each chromosome
+  # Use it to predict values for positions not previously on the map
+  # fix them AGAIN (in case) to the cumulative max, forcing map to only increase
+  data_forspline<-data %>% 
+    filter(!is.na(cM)) %>% 
+    mutate(cumMax=cummax(cM),
+           cumIncrement=cM-cumMax) %>% 
+    filter(cumIncrement>=0) %>% 
+    select(-cumMax,-cumIncrement)
+  
+  spline<-data_forspline %$% smooth.spline(x=Pos,y=cM,spar = 0.75)
+  
+  splinemap<-predict(spline,x = data$Pos) %>% 
+    as_tibble(.) %>% 
+    rename(Pos=x,cM=y) %>% 
+    mutate(cumMax=cummax(cM),
+           cumIncrement=cM-cumMax) %>% 
+    mutate(cM=cumMax) %>% 
+    select(-cumMax,-cumIncrement)
+  
+  return(splinemap) 
+}
+```
+
+```{r}
+splined_snps_genmap<-snps_genmap %>% 
+  select(-cM) %>% 
+  mutate(Pos=as.numeric(Pos)) %>% 
+  left_join(snps_genmap %>% 
+              mutate(across(c(Pos,cM),as.numeric)) %>% 
+              arrange(Chr,Pos) %>% 
+              nest(-Chr) %>% 
+              mutate(data=map(data,interpolate_genmap)) %>% 
+              unnest(data)) %>% 
+  distinct
+```
+
+```{r}
+all(splined_snps_genmap$DoseSNP_ID == colnames(dosages))
+# [1] TRUE
+
+saveRDS(splined_snps_genmap,file=here::here("data","genmap_2021May13.rds"))
+```
+
+```{r, fig.width=12}
+splined_snps_genmap %>% 
+  mutate(Map="Spline") %>% 
+  bind_rows(snps_genmap %>% 
+              mutate(across(c(Pos,cM),as.numeric)) %>% 
+              arrange(Chr,Pos) %>% mutate(Map="Data")) %>% 
+  ggplot(.,aes(x=Pos,y=cM,color=Map),alpha=0.5,size=0.75) + 
+  geom_point() + 
+  theme_bw() + facet_wrap(~as.integer(Chr), scales='free_x')
+```
+
+# Recomb. freq. matrix
+
+Construct a matrix of recombination frequencies at loci for all study loci. Pre-compute 1-2c to save time predicting cross variance.
+
+```{r, eval=F}
+library(predCrossVar)
+genmap<-readRDS(file=here::here("data","genmap_2021May13.rds"))
+m<-genmap$cM;
+names(m)<-genmap$DoseSNP_ID
+recombFreqMat<-1-(2*genmap2recombfreq(m,nChr = 18))
+saveRDS(recombFreqMat,file=here::here("data","recombFreqMat_1minus2c_2021May13.rds"))
+```
+
+# [TODO] PCA
+
+# Next step
+
+5.  [Parent-wise cross-validation](05-CrossValidation.html): Compute parent-wise cross-validation folds using the validated pedigree. Fit models to get marker effects and make subsequent predictions of cross means and (co)variances.
