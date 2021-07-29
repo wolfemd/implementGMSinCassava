@@ -11,6 +11,7 @@ editor_options:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = F, 
+                      eval = FALSE,
                       tidy='styler', tidy.opts=list(strict=FALSE,width.cutoff=100), highlight=TRUE)
 ```
 
@@ -227,10 +228,10 @@ table(samples2keep %in% phg_samples)
 ```{r example of sample names that do match}
 samples2keep[samples2keep %in% phg_samples][1:10]
 ```
-```{r example of my sample names that don't}
+```{r example of my sample names that dont}
 samples2keep[!samples2keep %in% phg_samples][1:10]
 ```
-```{r example of PHG sample names that don't}
+```{r example of PHG sample names that dont}
 phg_samples[!phg_samples %in% samples2keep][1:10]
 ```
 
