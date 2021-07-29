@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+<meta name="author" content="Marnin Wolfe" />
+
+
+<title>Extract VCF from PHG and prepare files for downstream use</title>
+
+<script src="site_libs/header-attrs-2.9/header-attrs.js"></script>
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/yeti.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+
+<link rel="icon" href="https://github.com/workflowr/workflowr-assets/raw/master/img/reproducible.png">
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+
+<style type="text/css">
+  code {
+    white-space: pre;
+  }
+  .sourceCode {
+    overflow: visible;
+  }
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    background-color: #232629;
+    color: #7a7c7d;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #7a7c7d;  padding-left: 4px; }
+div.sourceCode
+  { color: #cfcfc2; background-color: #232629; }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span { color: #cfcfc2; } /* Normal */
+code span.al { color: #95da4c; background-color: #4d1f24; font-weight: bold; } /* Alert */
+code span.an { color: #3f8058; } /* Annotation */
+code span.at { color: #2980b9; } /* Attribute */
+code span.bn { color: #f67400; } /* BaseN */
+code span.bu { color: #7f8c8d; } /* BuiltIn */
+code span.cf { color: #fdbc4b; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #3daee9; } /* Char */
+code span.cn { color: #27aeae; font-weight: bold; } /* Constant */
+code span.co { color: #7a7c7d; } /* Comment */
+code span.cv { color: #7f8c8d; } /* CommentVar */
+code span.do { color: #a43340; } /* Documentation */
+code span.dt { color: #2980b9; } /* DataType */
+code span.dv { color: #f67400; } /* DecVal */
+code span.er { color: #da4453; text-decoration: underline; } /* Error */
+code span.ex { color: #0099ff; font-weight: bold; } /* Extension */
+code span.fl { color: #f67400; } /* Float */
+code span.fu { color: #8e44ad; } /* Function */
+code span.im { color: #27ae60; } /* Import */
+code span.in { color: #c45b00; } /* Information */
+code span.kw { color: #cfcfc2; font-weight: bold; } /* Keyword */
+code span.op { color: #cfcfc2; } /* Operator */
+code span.ot { color: #27ae60; } /* Other */
+code span.pp { color: #27ae60; } /* Preprocessor */
+code span.re { color: #2980b9; background-color: #153042; } /* RegionMarker */
+code span.sc { color: #3daee9; } /* SpecialChar */
+code span.ss { color: #da4453; } /* SpecialString */
+code span.st { color: #f44f4f; } /* String */
+code span.va { color: #27aeae; } /* Variable */
+code span.vs { color: #da4453; } /* VerbatimString */
+code span.wa { color: #da4453; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.tab('show');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">implementGMSinCassava</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Preliminary Steps
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="01-cleanTPdata.html">Data Cleaning</a>
+    </li>
+    <li>
+      <a href="02-GetBLUPs.html">Get BLUPs</a>
+    </li>
+    <li>
+      <a href="03-validatePedigree.html">Verify pedigree records</a>
+    </li>
+    <li>
+      <a href="04-PreprocessDataFiles.html">Preprocessing input data</a>
+    </li>
+    <li>
+      <a href="08-PHGfiles.html">Preprocess PHG files</a>
+    </li>
+  </ul>
+</li>
+<li>
+  <a href="05-CrossValidation.html">Cross-validation</a>
+</li>
+<li>
+  <a href="06-GenomicPredictions.html">Genomic (mate) predictions</a>
+</li>
+<li>
+  <a href="07-Results.html">Results</a>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Other
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="about.html">About</a>
+    </li>
+    <li>
+      <a href="license.html">License</a>
+    </li>
+  </ul>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://github.com/wolfemd/implementGMSinCassava">
+    <span class="fa fa-github"></span>
+     
+    Source code
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">Extract VCF from PHG and prepare files for downstream use</h1>
+<h4 class="author">Marnin Wolfe</h4>
+<h4 class="date">2021-July-25</h4>
+
+</div>
+
+
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span> workflowr <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
+</button>
+</p>
+<div id="workflowr-report" class="collapse">
+<ul class="nav nav-tabs">
+<li class="active">
+<a data-toggle="tab" href="#summary">Summary</a>
+</li>
+<li>
+<a data-toggle="tab" href="#checks"> Checks <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> </a>
+</li>
+<li>
+<a data-toggle="tab" href="#versions">Past versions</a>
+</li>
+</ul>
+<div class="tab-content">
+<div id="summary" class="tab-pane fade in active">
+<p>
+<strong>Last updated:</strong> 2021-07-29
+</p>
+<p>
+<strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 7 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 0
+</p>
+<p>
+<strong>Knit directory:</strong> <code>implementGMSinCassava/</code> <span class="glyphicon glyphicon-question-sign" aria-hidden="true" title="This is the local directory in which the code in this file was executed."> </span>
+</p>
+<p>
+This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis was created with <a
+  href="https://github.com/jdblischak/workflowr">workflowr</a> (version 1.6.2). The <em>Checks</em> tab describes the reproducibility checks that were applied when the results were created. The <em>Past versions</em> tab lists the development history.
+</p>
+<hr>
+</div>
+<div id="checks" class="tab-pane fade">
+<div id="workflowr-checks" class="panel-group">
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguptodate"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>R Markdown file:</strong> up-to-date </a>
+</p>
+</div>
+<div id="strongRMarkdownfilestronguptodate" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great! Since the R Markdown file has been committed to the Git repository, you know the exact version of the code that produced these results.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongEnvironmentstrongempty"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Environment:</strong> empty </a>
+</p>
+</div>
+<div id="strongEnvironmentstrongempty" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! The global environment was empty. Objects defined in the global environment can affect the analysis in your R Markdown file in unknown ways. For reproduciblity it’s best to always run the code in an empty environment.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSeedstrongcodesetseed20210504code"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Seed:</strong> <code>set.seed(20210504)</code> </a>
+</p>
+</div>
+<div id="strongSeedstrongcodesetseed20210504code" class="panel-collapse collapse">
+<div class="panel-body">
+<p>The command <code>set.seed(20210504)</code> was run prior to running the code in the R Markdown file. Setting a seed ensures that any results that rely on randomness, e.g. subsampling or permutations, are reproducible.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSessioninformationstrongrecorded"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Session information:</strong> recorded </a>
+</p>
+</div>
+<div id="strongSessioninformationstrongrecorded" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Recording the operating system, R version, and package versions is critical for reproducibility.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongCachestrongnone"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Cache:</strong> none </a>
+</p>
+</div>
+<div id="strongCachestrongnone" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Nice! There were no cached chunks for this analysis, so you can be confident that you successfully produced the results during this run.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongFilepathsstrongrelative"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>File paths:</strong> relative </a>
+</p>
+</div>
+<div id="strongFilepathsstrongrelative" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Using relative paths to the files within your workflowr project makes it easier to run your code on other machines.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomwolfemdimplementGMSinCassavatree66faadb33c87fdf897f987b709c3c82b18733df5targetblank66faadba"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/wolfemd/implementGMSinCassava/tree/66faadb33c87fdf897f987b709c3c82b18733df5" target="_blank">66faadb</a> </a>
+</p>
+</div>
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomwolfemdimplementGMSinCassavatree66faadb33c87fdf897f987b709c3c82b18733df5targetblank66faadba" class="panel-collapse collapse">
+<div class="panel-body">
+<p>
+Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility.
+</p>
+<p>
+The results in this page were generated with repository version <a href="https://github.com/wolfemd/implementGMSinCassava/tree/66faadb33c87fdf897f987b709c3c82b18733df5" target="_blank">66faadb</a>. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
+</p>
+<p>
+Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
+</p>
+<pre><code>
+Ignored files:
+    Ignored:    .DS_Store
+    Ignored:    .Rhistory
+    Ignored:    .Rproj.user/
+    Ignored:    analysis/.DS_Store
+    Ignored:    analysis/accuracies.png
+    Ignored:    analysis/fig2.png
+    Ignored:    analysis/fig3.png
+    Ignored:    analysis/fig4.png
+    Ignored:    code/.DS_Store
+    Ignored:    data/.DS_Store
+
+Untracked files:
+    Untracked:  accuracies.png
+    Untracked:  analysis/docs/
+    Untracked:  analysis/speedUpPredCrossVar.Rmd
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.bed
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.bim
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.fam
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.hap.gz
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.log
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.nosex
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.sample
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.vcf.gz
+    Untracked:  data/DatabaseDownload_2021May04/
+    Untracked:  data/blups_forCrossVal.rds
+    Untracked:  data/config.txt
+    Untracked:  data/config_mw.txt
+    Untracked:  data/dosages_IITA_2021May13.rds
+    Untracked:  data/dosages_IITA_filtered_2021May13.rds
+    Untracked:  data/genmap_2021May13.rds
+    Untracked:  data/haps_IITA_2021May13.rds
+    Untracked:  data/haps_IITA_filtered_2021May13.rds
+    Untracked:  data/recombFreqMat_1minus2c_2021May13.rds
+    Untracked:  fig2.png
+    Untracked:  fig3.png
+    Untracked:  figure/
+    Untracked:  output/Cassava_HMII_V3_Marning_imputation_6-18-21.samples
+    Untracked:  output/IITA_CleanedTrialData_2021May10.rds
+    Untracked:  output/IITA_ExptDesignsDetected_2021May10.rds
+    Untracked:  output/IITA_blupsForModelTraining_twostage_asreml_2021May10.rds
+    Untracked:  output/IITA_trials_NOT_identifiable.csv
+    Untracked:  output/alphaAssignOutput_iita_pedigree.txt.dams
+    Untracked:  output/alphaAssignOutput_iita_pedigree.txt.dams.full
+    Untracked:  output/alphaAssignOutput_iita_pedigree.txt.pedigree
+    Untracked:  output/alphaAssignOutput_iita_pedigree.txt.pedigree.top
+    Untracked:  output/alphaAssignOutput_iita_pedigree.txt.sires
+    Untracked:  output/alphaAssignOutput_iita_pedigree.txt.sires.full
+    Untracked:  output/crossValPredsA.rds
+    Untracked:  output/crossValPredsAD.rds
+    Untracked:  output/cvAD_1rep_markerEffects.rds
+    Untracked:  output/cvAD_1rep_meanPredAccuracy.rds
+    Untracked:  output/cvAD_1rep_parentfolds.rds
+    Untracked:  output/cvAD_1rep_predAccuracy.rds
+    Untracked:  output/cvAD_1rep_predMeans.rds
+    Untracked:  output/cvAD_1rep_predVars.rds
+    Untracked:  output/cvAD_1rep_varPredAccuracy.rds
+    Untracked:  output/cvAD_5rep5fold_markerEffects.rds
+    Untracked:  output/cvAD_5rep5fold_meanPredAccuracy.rds
+    Untracked:  output/cvAD_5rep5fold_parentfolds.rds
+    Untracked:  output/cvAD_5rep5fold_predMeans.rds
+    Untracked:  output/cvAD_5rep5fold_predVars.rds
+    Untracked:  output/cvAD_5rep5fold_varPredAccuracy.rds
+    Untracked:  output/cvDirDom_5rep5fold_markerEffects.rds
+    Untracked:  output/cvDirDom_5rep5fold_meanPredAccuracy.rds
+    Untracked:  output/cvDirDom_5rep5fold_parentfolds.rds
+    Untracked:  output/cvDirDom_5rep5fold_predMeans.rds
+    Untracked:  output/cvDirDom_5rep5fold_predVars.rds
+    Untracked:  output/cvDirDom_5rep5fold_varPredAccuracy.rds
+    Untracked:  output/cvMeanPredAccuracyA.rds
+    Untracked:  output/cvMeanPredAccuracyAD.rds
+    Untracked:  output/cvPredMeansA.rds
+    Untracked:  output/cvPredMeansAD.rds
+    Untracked:  output/cvVarPredAccuracyA.rds
+    Untracked:  output/cvVarPredAccuracyAD.rds
+    Untracked:  output/genomicMatePredictions_top121parents_ModelAD.csv
+    Untracked:  output/genomicMatePredictions_top121parents_ModelAD.rds
+    Untracked:  output/genomicMatePredictions_top121parents_ModelDirDom.csv
+    Untracked:  output/genomicMatePredictions_top121parents_ModelDirDom.rds
+    Untracked:  output/genomicPredictions_ModelAD.csv
+    Untracked:  output/genomicPredictions_ModelAD.rds
+    Untracked:  output/genomicPredictions_ModelDirDom.csv
+    Untracked:  output/genomicPredictions_ModelDirDom.rds
+    Untracked:  output/kinship_A_IITA_2021May13.rds
+    Untracked:  output/kinship_D_IITA_2021May13.rds
+    Untracked:  output/kinship_domGenotypic_IITA_2021July5.rds
+    Untracked:  output/markEffsTest.rds
+    Untracked:  output/markerEffects.rds
+    Untracked:  output/markerEffectsA.rds
+    Untracked:  output/markerEffectsAD.rds
+    Untracked:  output/maxNOHAV_byStudy.csv
+    Untracked:  output/obsCrossMeansAndVars.rds
+    Untracked:  output/parentfolds.rds
+    Untracked:  output/ped2check_genome.rds
+    Untracked:  output/ped2genos.txt
+    Untracked:  output/pednames2keep.txt
+    Untracked:  output/pednames_Prune100_25_pt25.log
+    Untracked:  output/pednames_Prune100_25_pt25.nosex
+    Untracked:  output/pednames_Prune100_25_pt25.prune.in
+    Untracked:  output/pednames_Prune100_25_pt25.prune.out
+    Untracked:  output/potential_dams.txt
+    Untracked:  output/potential_sires.txt
+    Untracked:  output/predVarTest.rds
+    Untracked:  output/samples2keep_IITA_2021May13.txt
+    Untracked:  output/samples2keep_IITA_MAFpt01_prune50_25_pt98.log
+    Untracked:  output/samples2keep_IITA_MAFpt01_prune50_25_pt98.nosex
+    Untracked:  output/samples2keep_IITA_MAFpt01_prune50_25_pt98.prune.in
+    Untracked:  output/samples2keep_IITA_MAFpt01_prune50_25_pt98.prune.out
+    Untracked:  output/samples2keep_notInPHGdb.txt
+    Untracked:  output/test_cvAD_markerEffects.rds
+    Untracked:  output/test_cvAD_meanPredAccuracy.rds
+    Untracked:  output/test_cvAD_parentfolds.rds
+    Untracked:  output/test_cvAD_predAccuracy.rds
+    Untracked:  output/test_cvAD_predMeans.rds
+    Untracked:  output/test_cvAD_predVars.rds
+    Untracked:  output/test_cvAD_varPredAccuracy.rds
+    Untracked:  output/top50crosses.csv
+    Untracked:  output/verified_ped.txt
+
+</code></pre>
+<p>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not included in this status report because it is ok for generated content to have uncommitted changes.
+</p>
+</div>
+</div>
+</div>
+</div>
+<hr>
+</div>
+<div id="versions" class="tab-pane fade">
+
+<p>
+These are the previous versions of the repository in which changes were made to the R Markdown (<code>analysis/08-PHGfiles.Rmd</code>) and HTML (<code>docs/08-PHGfiles.html</code>) files. If you’ve configured a remote Git repository (see <code>?wflow_git_remote</code>), click on the hyperlinks in the table below to view the files as they were in that past version.
+</p>
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+File
+</th>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+<th>
+Message
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/wolfemd/implementGMSinCassava/blob/66faadb33c87fdf897f987b709c3c82b18733df5/analysis/08-PHGfiles.Rmd" target="_blank">66faadb</a>
+</td>
+<td>
+wolfemd
+</td>
+<td>
+2021-07-29
+</td>
+<td>
+Set eval=F in the set-up chunk. VERY rough draft.
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/wolfemd/implementGMSinCassava/blob/9d1f248b7867bc0e559a502a9460f4a03d3f3433/analysis/08-PHGfiles.Rmd" target="_blank">9d1f248</a>
+</td>
+<td>
+wolfemd
+</td>
+<td>
+2021-07-26
+</td>
+<td>
+Initial attempts to extract a VCF from the PHG DB for use in downstream analyses.
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<hr>
+</div>
+</div>
+</div>
+<div id="previous-step" class="section level1">
+<h1>Previous step</h1>
+<ol start="3" style="list-style-type: decimal">
+<li><a href="03-validatePedigree.html">Validate the pedigree obtained from cassavabase</a>: Before setting up a cross-validation scheme for predictions that depend on a correct pedigree, add a basic verification step to the pipeline. Not trying to fill unknown or otherwise correct the pedigree. Assess evidence that relationship is correct, remove if incorrect.</li>
+</ol>
+</div>
+<div id="extra-vcf-from-phg-database" class="section level1">
+<h1>Extra VCF from PHG database</h1>
+<p>From Evan Long</p>
+<blockquote>
+<p>I put the db and config file on workdir of cbsurobbins this command with tassel should export the VCF (Marnin_imputation.vcf)<br />
+<code>/workdir/Cassava_HMII_V3_Marning_imputation_6-18-21.db</code> <code>/workdir/config.txt</code></p>
+<p>Just got to give path to tassel (I would download a recent version of Tassel5 if you haven’t done so)<br />
+<code>./tassel-5-standalone/run_pipeline.pl -Xmx10g -debug -configParameters config.txt -HaplotypeGraphBuilderPlugin -configFile config.txt -includeSequences false -includeVariantContexts true -methods genome_upgma_0.001  -endPlugin -ImportDiploidPathPlugin -pathMethodName Marnin_imputation -endPlugin -PathsToVCFPlugin -outputFile Marnin_imputation -endPlugin</code></p>
+</blockquote>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># copy from cbsurobbins workdir to my networked storage</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> config.txt ~/</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> Cassava_HMII_V3_Marning_imputation_6-18-21.db ~/</span></code></pre></div>
+<p>Since Evan was worried about memory, grab a large mem. machine for myself.</p>
+<p>cbsulm14…</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> /workdir/</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> mw489/</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> ~/config.txt /workdir/mw489/</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> ~/Cassava_HMII_V3_Marning_imputation_6-18-21.db /workdir/mw489/</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="ex">screen</span><span class="kw">;</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> /workdir/mw489/</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://bitbucket.org/tasseladmin/tassel-5-standalone.git</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="ex">./tassel-5-standalone/run_pipeline.pl</span> <span class="at">-Xmx500g</span> <span class="at">-debug</span> <span class="at">-configParameters</span> config.txt <span class="at">-HaplotypeGraphBuilderPlugin</span> <span class="at">-configFile</span> config.txt <span class="at">-includeSequences</span> false <span class="at">-includeVariantContexts</span> true <span class="at">-methods</span> genome_upgma_0.001  <span class="at">-endPlugin</span> <span class="at">-ImportDiploidPathPlugin</span> <span class="at">-pathMethodName</span> Marnin_imputation <span class="at">-endPlugin</span> <span class="at">-PathsToVCFPlugin</span> <span class="at">-outputFile</span> Cassava_HMII_V3_Marning_imputation_6-18-21 <span class="at">-endPlugin</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> Cassava_HMII_V3_Marning_imputation_6-18-21.vcf.gz /home/mw489/implementGMSinCassava/data/</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">[mw489@cbsulm14</span> mw489]$ ./tassel-5-standalone/run_pipeline.pl <span class="at">-Xmx500g</span> <span class="at">-debug</span> <span class="at">-configParameters</span> config.txt <span class="at">-HaplotypeGraphBuilderPlugin</span> <span class="at">-configFile</span> config.txt <span class="at">-includeSequences</span> false <span class="at">-includeVariantContexts</span> true <span class="at">-methods</span> genome_upgma_0.001  <span class="at">-endPlugin</span> <span class="at">-ImportDiploidPathPlugin</span> <span class="at">-pathMethodName</span> Marnin_imputation <span class="at">-endPlugin</span> <span class="at">-PathsToVCFPlugin</span> <span class="at">-outputFile</span> Cassava_HMII_V3_Marning_imputation_6-18-21 <span class="at">-endPlugin</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ex">./tassel-5-standalone/lib/ahocorasick-0.2.4.jar:./tassel-5-standalone/lib/biojava-alignment-4.0.0.jar:./tassel-5-standalone/lib/biojava-core-4.0.0.jar:./tassel-5-standalone/lib/biojava-phylo-4.0.0.jar:./tassel-5-standalone/lib/colt-1.2.0.jar:./tassel-5-standalone/lib/commons-codec-1.10.jar:./tassel-5-standalone/lib/commons-math3-3.4.1.jar:./tassel-5-standalone/lib/ejml-0.23.jar:./tassel-5-standalone/lib/fastutil-8.2.2.jar:./tassel-5-standalone/lib/forester-1.038.jar:./tassel-5-standalone/lib/gs-core-1.3.jar:./tassel-5-standalone/lib/gs-ui-1.3.jar:./tassel-5-standalone/lib/guava-22.0.jar:./tassel-5-standalone/lib/htsjdk-2.23.0.jar:./tassel-5-standalone/lib/ini4j-0.5.4.jar:./tassel-5-standalone/lib/itextpdf-5.1.0.jar:./tassel-5-standalone/lib/javax.json-1.0.4.jar:./tassel-5-standalone/lib/jcommon-1.0.23.jar:./tassel-5-standalone/lib/jfreechart-1.0.19.jar:./tassel-5-standalone/lib/jfreesvg-3.2.jar:./tassel-5-standalone/lib/jhdf5-14.12.5.jar:./tassel-5-standalone/lib/json-simple-1.1.1.jar:./tassel-5-standalone/lib/junit-4.10.jar:./tassel-5-standalone/lib/kotlin-stdlib-1.4.32.jar:./tassel-5-standalone/lib/kotlin-stdlib-jdk7-1.4.32.jar:./tassel-5-standalone/lib/kotlin-stdlib-jdk8-1.4.32.jar:./tassel-5-standalone/lib/kotlinx-coroutines-core-jvm-1.4.3.jar:./tassel-5-standalone/lib/log4j-1.2.13.jar:./tassel-5-standalone/lib/mail-1.4.jar:./tassel-5-standalone/lib/phg.jar:./tassel-5-standalone/lib/postgresql-9.4-1201.jdbc41.jar:./tassel-5-standalone/lib/scala-library-2.10.1.jar:./tassel-5-standalone/lib/slf4j-api-1.7.10.jar:./tassel-5-standalone/lib/slf4j-simple-1.7.10.jar:./tassel-5-standalone/lib/snappy-java-1.1.1.6.jar:./tassel-5-standalone/lib/sqlite-jdbc-3.8.5-pre1.jar:./tassel-5-standalone/lib/trove-3.0.3.jar:./tassel-5-standalone/sTASSEL.jar</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="ex">Memory</span> Settings: <span class="at">-Xms512m</span> <span class="at">-Xmx500g</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="ex">Tassel</span> Pipeline Arguments: <span class="at">-debug</span> <span class="at">-configParameters</span> config.txt <span class="at">-HaplotypeGraphBuilderPlugin</span> <span class="at">-configFile</span> config.txt <span class="at">-includeSequences</span> false <span class="at">-includeVariantContexts</span> true <span class="at">-methods</span> genome_upgma_0.001 <span class="at">-endPlugin</span> <span class="at">-ImportDiploidPathPlugin</span> <span class="at">-pathMethodName</span> Marnin_imputation <span class="at">-endPlugin</span> <span class="at">-PathsToVCFPlugin</span> <span class="at">-outputFile</span> Cassava_HMII_V3_Marning_imputation_6-18-21 <span class="at">-endPlugin</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> load: loading parameter cache with: config.txt</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: Xmx value: 100G</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: DP_poisson_max value: .99</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: mapQ value: 48</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: splitTaxa value: false</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: exportMergedVCF value: /tempFileDir/data/outputs/mergedVCFs/</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: sentieon_license value: cbsulogin2.tc.cornell.edu:8990</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: maxNodesPerRange value: 30</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: DP_poisson_min value: .05</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: mxDiv value: .001</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: password value: sqlite</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: includeVariantContexts value: true</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: configFile value: config.txt</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: host value: localHost</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: DBtype value: sqlite</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: probCorrect value: 0.95</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: replaceNsWithMajor value: false</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: minReads value: 0</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: useDepth value: false</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: minTaxa value: 1</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: minTaxaPerRange value: 1</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: method value: upgma</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: emissionMethod value: allCounts</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: maxError value: 0.2</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: includeVariants value: true</span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: referenceFasta value: /workdir/eml255/Cassava_PHG_Het/Reference/cassavaV6_chrAndScaffoldsCombined_numeric.fa</span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: numThreads value: 20</span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: maxReadsPerKB value: 5000</span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: GQ_min value: 50</span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: minTransitionProb value: 0.001</span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: filterHets value: t</span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: user value: sqlite</span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.plugindef.ParameterCache <span class="at">-</span> ParameterCache: key: DB value: Cassava_HMII_V3_Marning_imputation_6-18-21.db</span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.tassel.TasselLogging <span class="at">-</span> Tassel Version: 5.2.73  Date: June 23, 2021</span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.tassel.TasselLogging <span class="at">-</span> Max Available Memory Reported by JVM: 512000 MB</span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.tassel.TasselLogging <span class="at">-</span> Java Version: 13.0.2</span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.tassel.TasselLogging <span class="at">-</span> OS: Linux</span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.tassel.TasselLogging <span class="at">-</span> Number of Processors: 112</span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a><span class="ex">[main]</span> INFO net.maizegenetics.pipeline.TasselPipeline <span class="at">-</span> Tassel Pipeline Arguments: [-fork1, <span class="at">-HaplotypeGraphBuilderPlugin,</span> <span class="at">-configFile,</span> config.txt, <span class="at">-includeSequences,</span> false, <span class="at">-includeVariantContexts,</span> true, <span class="at">-methods,</span> genome_upgma_0.001, <span class="at">-endPlugin,</span> <span class="at">-ImportDiploidPathPlugin,</span> <span class="at">-pathMethodName,</span> Marnin_imputation, <span class="at">-endPlugin,</span> <span class="at">-PathsToVCFPlugin,</span> <span class="at">-outputFile,</span> Cassava_HMII_V3_Marning_imputation_6-18-21, <span class="at">-endPlugin,</span> <span class="at">-runfork1]</span></span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a><span class="ex">net.maizegenetics.pangenome.api.HaplotypeGraphBuilderPlugin</span></span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a>   <span class="ex">net.maizegenetics.pangenome.hapCalling.ImportDiploidPathPlugin</span></span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>      <span class="ex">net.maizegenetics.pangenome.hapCalling.PathsToVCFPlugin</span></span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a><span class="ex">[pool-1-thread-1]</span> INFO net.maizegenetics.plugindef.AbstractPlugin <span class="at">-</span> Starting net.maizegenetics.pangenome.api.HaplotypeGraphBuilderPlugin: time: Jul 25, 2021 20:11:1</span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a><span class="ex">[pool-1-thread-1]</span> INFO net.maizegenetics.plugindef.AbstractPlugin <span class="at">-</span></span>
+<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a><span class="ex">HaplotypeGraphBuilderPlugin</span> Parameters</span>
+<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a><span class="ex">configFile:</span> config.txt</span>
+<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a><span class="ex">methods:</span> genome_upgma_0.001</span>
+<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a><span class="ex">includeSequences:</span> false</span>
+<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a><span class="ex">includeVariantContexts:</span> true</span>
+<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a><span class="ex">haplotypeIds:</span> null</span>
+<span id="cb3-56"><a href="#cb3-56" aria-hidden="true" tabindex="-1"></a><span class="ex">chromosomes:</span> null</span>
+<span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a><span class="ex">taxa:</span> null</span>
+<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a><span class="ex">[pool-1-thread-1]</span> INFO net.maizegenetics.pangenome.db_loading.DBLoadingUtils <span class="at">-</span> first connection: dbName from config file = Cassava_HMII_V3_Marning_imputation_6-18-21.db host: localHost user: sqlite type: sqlite</span>
+<span id="cb3-60"><a href="#cb3-60" aria-hidden="true" tabindex="-1"></a><span class="ex">[pool-1-thread-1]</span> INFO net.maizegenetics.pangenome.db_loading.DBLoadingUtils <span class="at">-</span> Database URL: jdbc:sqlite:Cassava_HMII_V3_Marning_imputation_6-18-21.db</span>
+<span id="cb3-61"><a href="#cb3-61" aria-hidden="true" tabindex="-1"></a><span class="ex">[pool-1-thread-1]</span> INFO net.maizegenetics.pangenome.db_loading.DBLoadingUtils <span class="at">-</span> Connected to database:</span>
+<span id="cb3-62"><a href="#cb3-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-63"><a href="#cb3-63" aria-hidden="true" tabindex="-1"></a><span class="ex">[pool-1-thread-1]</span> INFO net.maizegenetics.pangenome.api.CreateGraphUtils <span class="at">-</span> referenceRangesAsMap: query statement: select reference_ranges.ref_range_id, chrom, range_start, range_end, methods.name from reference_ranges  INNER JOIN ref_range_ref_range_method on ref_range_ref_range_method.ref_range_id=reference_ranges.ref_range_id  INNER JOIN methods on ref_range_ref_range_method.method_id = methods.method_id  AND methods.method_type = 7 ORDER BY reference_ranges.ref_range_id</span>
+<span id="cb3-64"><a href="#cb3-64" aria-hidden="true" tabindex="-1"></a><span class="ex">methods</span> size: 1</span>
+<span id="cb3-65"><a href="#cb3-65" aria-hidden="true" tabindex="-1"></a><span class="ex">[pool-1-thread-1]</span> INFO net.maizegenetics.pangenome.api.CreateGraphUtils <span class="at">-</span> referenceRangesAsMap: number of reference ranges: 65891</span>
+<span id="cb3-66"><a href="#cb3-66" aria-hidden="true" tabindex="-1"></a><span class="ex">[pool-1-thread-1]</span> INFO net.maizegenetics.pangenome.api.CreateGraphUtils <span class="at">-</span> referenceRangesAsMap: time: 0.442794469 secs.</span>
+<span id="cb3-67"><a href="#cb3-67" aria-hidden="true" tabindex="-1"></a><span class="ex">[pool-1-thread-1]</span> INFO net.maizegenetics.pangenome.api.CreateGraphUtils <span class="at">-</span> taxaListMap: query statement: SELECT gamete_haplotypes.gamete_grp_id, genotypes.line_name FROM gamete_haplotypes INNER JOIN gametes ON gamete_haplotypes.gameteid = gametes.gameteid INNER JOIN genotypes on gametes.genoid = genotypes.genoid ORDER BY gamete_haplotypes.gamete_grp_id<span class="kw">;</span></span>
+<span id="cb3-68"><a href="#cb3-68" aria-hidden="true" tabindex="-1"></a><span class="ex">[pool-1-thread-1]</span> INFO net.maizegenetics.pangenome.api.CreateGraphUtils <span class="at">-</span> taxaListMap: number of taxa lists: 70797</span>
+<span id="cb3-69"><a href="#cb3-69" aria-hidden="true" tabindex="-1"></a><span class="ex">[pool-1-thread-1]</span> INFO net.maizegenetics.pangenome.api.CreateGraphUtils <span class="at">-</span> taxaListMap: time: 3.342730091 secs.</span>
+<span id="cb3-70"><a href="#cb3-70" aria-hidden="true" tabindex="-1"></a><span class="ex">[pool-1-thread-1]</span> INFO net.maizegenetics.pangenome.api.VariantUtils <span class="at">-</span> variantIdsToVariantMap: query statement: SELECT variant_id, chrom, position, ref_allele_id, alt_allele_id FROM variants<span class="kw">;</span></span>
+<span id="cb3-71"><a href="#cb3-71" aria-hidden="true" tabindex="-1"></a><span class="ex">[pool-1-thread-1]</span> INFO net.maizegenetics.pangenome.api.CreateGraphUtils <span class="at">-</span> createHaplotypeNodes: haplotype method: genome_upgma_0.001 range group method: null</span>
+<span id="cb3-72"><a href="#cb3-72" aria-hidden="true" tabindex="-1"></a><span class="ex">[pool-1-thread-1]</span> INFO net.maizegenetics.pangenome.api.CreateGraphUtils <span class="at">-</span> createHaplotypeNodes: query statement: SELECT haplotypes_id, gamete_grp_id, haplotypes.ref_range_id, asm_contig, asm_start_coordinate, asm_end_coordinate, genome_file_id, seq_hash, seq_len, variant_list FROM haplotypes WHERE method_id = 9<span class="kw">;</span></span>
+<span id="cb3-73"><a href="#cb3-73" aria-hidden="true" tabindex="-1"></a><span class="ex">[pool-1-thread-1]</span> INFO net.maizegenetics.pangenome.api.CreateGraphUtils <span class="at">-</span> addNodes: number of nodes: 282582</span>
+<span id="cb3-74"><a href="#cb3-74" aria-hidden="true" tabindex="-1"></a><span class="ex">[pool-1-thread-1]</span> INFO net.maizegenetics.pangenome.api.CreateGraphUtils <span class="at">-</span> addNodes: number of reference ranges: 32493</span>
+<span id="cb3-75"><a href="#cb3-75" aria-hidden="true" tabindex="-1"></a><span class="ex">[pool-1-thread-1]</span> INFO net.maizegenetics.pangenome.api.CreateGraphUtils <span class="at">-</span> createHaplotypeNodes: time: 77.564658867 secs.</span>
+<span id="cb3-76"><a href="#cb3-76" aria-hidden="true" tabindex="-1"></a><span class="ex">[pool-1-thread-1]</span> INFO net.maizegenetics.pangenome.api.HaplotypeGraph <span class="at">-</span> Created graph edges: created when requested  number of nodes: 282582  number of reference ranges: 32493</span>
+<span id="cb3-77"><a href="#cb3-77" aria-hidden="true" tabindex="-1"></a><span class="ex">[pool-1-thread-1]</span> INFO net.maizegenetics.plugindef.AbstractPlugin <span class="at">-</span> Finished net.maizegenetics.pangenome.api.HaplotypeGraphBuilderPlugin: time: Jul 25, 2021 20:12:26</span>
+<span id="cb3-78"><a href="#cb3-78" aria-hidden="true" tabindex="-1"></a><span class="ex">[pool-1-thread-1]</span> INFO net.maizegenetics.plugindef.AbstractPlugin <span class="at">-</span> Starting net.maizegenetics.pangenome.hapCalling.ImportDiploidPathPlugin: time: Jul 25, 2021 20:12:26</span>
+<span id="cb3-79"><a href="#cb3-79" aria-hidden="true" tabindex="-1"></a><span class="ex">[pool-1-thread-1]</span> INFO net.maizegenetics.plugindef.AbstractPlugin <span class="at">-</span></span>
+<span id="cb3-80"><a href="#cb3-80" aria-hidden="true" tabindex="-1"></a><span class="ex">ImportDiploidPathPlugin</span> Parameters</span>
+<span id="cb3-81"><a href="#cb3-81" aria-hidden="true" tabindex="-1"></a><span class="ex">pathMethodName:</span> Marnin_imputation</span>
+<span id="cb3-82"><a href="#cb3-82" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-83"><a href="#cb3-83" aria-hidden="true" tabindex="-1"></a><span class="ex">[pool-1-thread-1]</span> INFO net.maizegenetics.pangenome.db_loading.DBLoadingUtils <span class="at">-</span> first connection: dbName from config file = Cassava_HMII_V3_Marning_imputation_6-18-21.db host: localHost user: sqlite type: sqlite</span>
+<span id="cb3-84"><a href="#cb3-84" aria-hidden="true" tabindex="-1"></a><span class="ex">[pool-1-thread-1]</span> INFO net.maizegenetics.pangenome.db_loading.DBLoadingUtils <span class="at">-</span> Database URL: jdbc:sqlite:Cassava_HMII_V3_Marning_imputation_6-18-21.db</span>
+<span id="cb3-85"><a href="#cb3-85" aria-hidden="true" tabindex="-1"></a><span class="ex">[pool-1-thread-1]</span> INFO net.maizegenetics.pangenome.db_loading.DBLoadingUtils <span class="at">-</span> Connected to database:</span>
+<span id="cb3-86"><a href="#cb3-86" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-87"><a href="#cb3-87" aria-hidden="true" tabindex="-1"></a><span class="ex">[pool-1-thread-1]</span> INFO net.maizegenetics.pangenome.hapCalling.ImportDiploidPathPlugin <span class="at">-</span> importPathsFromDB: query: SELECT line_name, paths_data FROM paths, genotypes, methods WHERE paths.genoid=genotypes.genoid AND methods.method_id=paths.method_id AND methods.name=<span class="st">&#39;Marnin_imputation&#39;</span></span>
+<span id="cb3-88"><a href="#cb3-88" aria-hidden="true" tabindex="-1"></a><span class="ex">[pool-1-thread-1]</span> INFO net.maizegenetics.pangenome.hapCalling.ImportDiploidPathPlugin <span class="at">-</span> importPathsFromDB: number of path list: 12140</span>
+<span id="cb3-89"><a href="#cb3-89" aria-hidden="true" tabindex="-1"></a><span class="ex">[pool-1-thread-1]</span> INFO net.maizegenetics.plugindef.AbstractPlugin <span class="at">-</span> Finished net.maizegenetics.pangenome.hapCalling.ImportDiploidPathPlugin: time: Jul 25, 2021 20:34:27</span>
+<span id="cb3-90"><a href="#cb3-90" aria-hidden="true" tabindex="-1"></a><span class="ex">[pool-1-thread-1]</span> INFO net.maizegenetics.plugindef.AbstractPlugin <span class="at">-</span> Starting net.maizegenetics.pangenome.hapCalling.PathsToVCFPlugin: time: Jul 25, 2021 20:34:27</span>
+<span id="cb3-91"><a href="#cb3-91" aria-hidden="true" tabindex="-1"></a><span class="ex">[pool-1-thread-1]</span> INFO net.maizegenetics.plugindef.AbstractPlugin <span class="at">-</span></span>
+<span id="cb3-92"><a href="#cb3-92" aria-hidden="true" tabindex="-1"></a><span class="ex">PathsToVCFPlugin</span> Parameters</span>
+<span id="cb3-93"><a href="#cb3-93" aria-hidden="true" tabindex="-1"></a><span class="ex">outputFile:</span> Cassava_HMII_V3_Marning_imputation_6-18-21.vcf</span>
+<span id="cb3-94"><a href="#cb3-94" aria-hidden="true" tabindex="-1"></a><span class="ex">refRangeFileVCF:</span> null</span>
+<span id="cb3-95"><a href="#cb3-95" aria-hidden="true" tabindex="-1"></a><span class="ex">referenceFasta:</span> /workdir/eml255/Cassava_PHG_Het/Reference/cassavaV6_chrAndScaffoldsCombined_numeric.fa</span>
+<span id="cb3-96"><a href="#cb3-96" aria-hidden="true" tabindex="-1"></a><span class="ex">makeDiploid:</span> true</span>
+<span id="cb3-97"><a href="#cb3-97" aria-hidden="true" tabindex="-1"></a><span class="ex">positions:</span> null</span>
+<span id="cb3-98"><a href="#cb3-98" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-99"><a href="#cb3-99" aria-hidden="true" tabindex="-1"></a><span class="ex">[pool-1-thread-1]</span> ERROR net.maizegenetics.plugindef.AbstractPlugin <span class="at">-</span> <span class="at">-referenceFasta:</span> /workdir/eml255/Cassava_PHG_Het/Reference/cassavaV6_chrAndScaffoldsCombined_numeric.fa doesn<span class="st">&#39;t exist</span></span>
+<span id="cb3-100"><a href="#cb3-100" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-101"><a href="#cb3-101" aria-hidden="true" tabindex="-1"></a><span class="st">[pool-1-thread-1] INFO net.maizegenetics.plugindef.AbstractPlugin -</span></span>
+<span id="cb3-102"><a href="#cb3-102" aria-hidden="true" tabindex="-1"></a><span class="st">Usage:</span></span>
+<span id="cb3-103"><a href="#cb3-103" aria-hidden="true" tabindex="-1"></a><span class="st">PathsToVCFPlugin &lt;options&gt;</span></span>
+<span id="cb3-104"><a href="#cb3-104" aria-hidden="true" tabindex="-1"></a><span class="st">-outputFile &lt;Output VCF File Name&gt; : Output file name (required)</span></span>
+<span id="cb3-105"><a href="#cb3-105" aria-hidden="true" tabindex="-1"></a><span class="st">-refRangeFileVCF &lt;Reference Range File&gt; : Reference Range file used to subset the paths for only specified regions of the genome.</span></span>
+<span id="cb3-106"><a href="#cb3-106" aria-hidden="true" tabindex="-1"></a><span class="st">-referenceFasta &lt;Reference Genome&gt; : Reference Genome.</span></span>
+<span id="cb3-107"><a href="#cb3-107" aria-hidden="true" tabindex="-1"></a><span class="st">-makeDiploid &lt;true | false&gt; : Whether to report haploid paths as homozygousdiploid (Default: true)</span></span>
+<span id="cb3-108"><a href="#cb3-108" aria-hidden="true" tabindex="-1"></a><span class="st">-positions &lt;Position List&gt; : Positions to include in VCF. Can be specified by Genotype file (i.e. VCF, Hapmap, etc.), bed file, or json file containing the requested positions.</span></span>
+<span id="cb3-109"><a href="#cb3-109" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-110"><a href="#cb3-110" aria-hidden="true" tabindex="-1"></a><span class="st">[mw489@cbsulm14 mw489]$ pwd</span></span>
+<span id="cb3-111"><a href="#cb3-111" aria-hidden="true" tabindex="-1"></a><span class="st">/workdir/mw489</span></span>
+<span id="cb3-112"><a href="#cb3-112" aria-hidden="true" tabindex="-1"></a><span class="st">[mw489@cbsulm14 mw489]$ ls -lht</span></span>
+<span id="cb3-113"><a href="#cb3-113" aria-hidden="true" tabindex="-1"></a><span class="st">total 22G</span></span>
+<span id="cb3-114"><a href="#cb3-114" aria-hidden="true" tabindex="-1"></a><span class="st">drwxrwxr-x 6 mw489 mw489 4.0K Jul 25 20:09 tassel-5-standalone</span></span>
+<span id="cb3-115"><a href="#cb3-115" aria-hidden="true" tabindex="-1"></a><span class="st">-rwxr-x--- 1 mw489 mw489  22G Jul 25 20:03 Cassava_HMII_V3_Marning_imputation_6-18-21.db</span></span>
+<span id="cb3-116"><a href="#cb3-116" aria-hidden="true" tabindex="-1"></a><span class="st">-rwxr-x--- 1 mw489 mw489 1.3K Jul 25 20:02 config.txt</span></span>
+<span id="cb3-117"><a href="#cb3-117" aria-hidden="true" tabindex="-1"></a><span class="st">[mw489@cbsulm14 mw489]$ </span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> /workdir/eml255/Cassava_PHG_Het/Reference/cassavaV6_chrAndScaffoldsCombined_numeric.fa ~/</span></code></pre></div>
+<p>cbsulm08…</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> /workdir/</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> mw489/</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> ~/config_mw.txt /workdir/mw489/</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> ~/Cassava_HMII_V3_Marning_imputation_6-18-21.db /workdir/mw489/</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> ~/cassavaV6_chrAndScaffoldsCombined_numeric.fa /workdir/mw489/</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="ex">screen</span><span class="kw">;</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> /workdir/mw489/<span class="kw">;</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://bitbucket.org/tasseladmin/tassel-5-standalone.git<span class="kw">;</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="ex">./tassel-5-standalone/run_pipeline.pl</span> <span class="at">-Xmx500g</span> <span class="at">-debug</span> <span class="dt">\</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">-configParameters</span> config_mw.txt <span class="dt">\</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">-HaplotypeGraphBuilderPlugin</span> <span class="at">-configFile</span> config_mw.txt <span class="dt">\</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">-includeSequences</span> false <span class="dt">\</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">-includeVariantContexts</span> true <span class="dt">\</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">-methods</span> genome_upgma_0.001 <span class="dt">\</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">-endPlugin</span> <span class="dt">\</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">-ImportDiploidPathPlugin</span> <span class="dt">\</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">-pathMethodName</span> Marnin_imputation <span class="dt">\</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">-endPlugin</span> <span class="dt">\</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">-PathsToVCFPlugin</span> <span class="dt">\</span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">-outputFile</span> Cassava_HMII_V3_Marning_imputation_6-18-21 <span class="dt">\</span></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">-endPlugin</span> <span class="op">&gt;</span> extract_vcf_from_phg.log</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> Cassava_HMII_V3_Marning_imputation_6-18-21.vcf.gz /home/mw489/implementGMSinCassava/data/</span></code></pre></div>
+<p><strong>FAILS</strong>: not enough memory. Wrote a <code>*.vcf</code> with 12140 indivs and 184032 sites. Evan informs to expect ~4M sites. It terimnated on Chr. 1.</p>
+<p>Get the sample list using <code>bcftools query</code>.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">bcftools</span> query <span class="at">--list-samples</span> Cassava_HMII_V3_Marning_imputation_6-18-21.vcf <span class="op">&gt;</span> Cassava_HMII_V3_Marning_imputation_6-18-21.samples</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> Cassava_HMII_V3_Marning_imputation_6-18-21.samples ~/</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> ~/Cassava_HMII_V3_Marning_imputation_6-18-21.samples ~/implementGMSinCassava/output/</span></code></pre></div>
+<p>This is just precautionary. I want to manually compare to the list of taxa I need, then break the job up accordingly. A future pipeline wouldn’t need (or would arleady have) this taxa list.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse); <span class="fu">library</span>(magrittr)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>samples2keep<span class="ot">&lt;-</span><span class="fu">read.table</span>(here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;output&quot;</span>,<span class="st">&quot;samples2keep_IITA_2021May13.txt&quot;</span>),</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>                         <span class="at">header =</span> F, <span class="at">stringsAsFactors =</span> F)<span class="sc">$</span>V2</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>phg_samples<span class="ot">&lt;-</span><span class="fu">read.table</span>(here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;output&quot;</span>,<span class="st">&quot;Cassava_HMII_V3_Marning_imputation_6-18-21.samples&quot;</span>),</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>                         <span class="at">header =</span> F, <span class="at">stringsAsFactors =</span> F)<span class="sc">$</span>V1</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(samples2keep <span class="sc">%in%</span> phg_samples)</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>samples2keep[samples2keep <span class="sc">%in%</span> phg_samples][<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>]</span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>samples2keep[<span class="sc">!</span>samples2keep <span class="sc">%in%</span> phg_samples][<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>]</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>phg_samples[<span class="sc">!</span>phg_samples <span class="sc">%in%</span> samples2keep][<span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>]</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>samples2keep <span class="sc">%&gt;%</span> </span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tibble</span>(<span class="at">FullSampleName=</span>.) <span class="sc">%&gt;%</span> </span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">separate</span>(FullSampleName,<span class="fu">c</span>(<span class="st">&quot;SampleID&quot;</span>,<span class="st">&quot;GBS_ID&quot;</span>),<span class="st">&quot;:&quot;</span>,<span class="at">remove =</span> F) <span class="sc">%&gt;%</span> </span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">semi_join</span>(<span class="fu">tibble</span>(<span class="at">SampleID=</span>phg_samples))</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>samples2keep <span class="sc">%&gt;%</span> </span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tibble</span>(<span class="at">FullSampleName=</span>.) <span class="sc">%&gt;%</span> </span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">separate</span>(FullSampleName,<span class="fu">c</span>(<span class="st">&quot;SampleID&quot;</span>,<span class="st">&quot;GBS_ID&quot;</span>),<span class="st">&quot;:&quot;</span>,<span class="at">remove =</span> F) <span class="sc">%&gt;%</span> </span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">anti_join</span>(<span class="fu">tibble</span>(<span class="at">SampleID=</span>phg_samples))</span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>samples2keep <span class="sc">%&gt;%</span> </span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tibble</span>(<span class="at">FullSampleName=</span>.) <span class="sc">%&gt;%</span> </span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">separate</span>(FullSampleName,<span class="fu">c</span>(<span class="st">&quot;SampleID&quot;</span>,<span class="st">&quot;GBS_ID&quot;</span>),<span class="st">&quot;:&quot;</span>,<span class="at">remove =</span> F) <span class="sc">%&gt;%</span> </span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">anti_join</span>(<span class="fu">tibble</span>(<span class="at">SampleID=</span>phg_samples))  <span class="sc">%$%</span> </span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>  FullSampleName <span class="sc">%&gt;%</span> </span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">write.table</span>(.,here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;output&quot;</span>,<span class="st">&quot;samples2keep_notInPHGdb.txt&quot;</span>),<span class="at">row.names =</span> F, <span class="at">col.names =</span> F, <span class="at">quote =</span> F)</span></code></pre></div>
+</div>
+<div id="haplotype-matrix-from-phased-vcf" class="section level1">
+<h1>Haplotype matrix from phased VCF</h1>
+<p>Extract haps from VCF with <code>bcftools</code></p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse); <span class="fu">library</span>(magrittr)</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>pathIn<span class="ot">&lt;-</span><span class="st">&quot;/home/jj332_cas/marnin/implementGMSinCassava/data/&quot;</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>pathOut<span class="ot">&lt;-</span>pathIn</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>vcfName<span class="ot">&lt;-</span><span class="st">&quot;AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719&quot;</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="fu">system</span>(<span class="fu">paste0</span>(<span class="st">&quot;bcftools convert --hapsample &quot;</span>,</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>              pathOut,vcfName,<span class="st">&quot; &quot;</span>,</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>              pathIn,vcfName,<span class="st">&quot;.vcf.gz &quot;</span>))</span></code></pre></div>
+<p>Read haps to R</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(data.table)</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>haps<span class="ot">&lt;-</span><span class="fu">fread</span>(<span class="fu">paste0</span>(pathIn,vcfName,<span class="st">&quot;.hap.gz&quot;</span>),</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">stringsAsFactors =</span> F,<span class="at">header =</span> F) <span class="sc">%&gt;%</span> </span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  as.data.frame</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>sampleids<span class="ot">&lt;-</span><span class="fu">fread</span>(<span class="fu">paste0</span>(pathIn,vcfName,<span class="st">&quot;.sample&quot;</span>),</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>                 <span class="at">stringsAsFactors =</span> F,<span class="at">header =</span> F,<span class="at">skip =</span> <span class="dv">2</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  as.data.frame</span></code></pre></div>
+<p><strong>Extract needed GIDs from BLUPs and pedigree:</strong> Subset to: (1) genotyped-plus-phenotyped and/or (2) in verified pedigree.</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>blups<span class="ot">&lt;-</span><span class="fu">readRDS</span>(<span class="at">file=</span>here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;output&quot;</span>,</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>                               <span class="st">&quot;IITA_blupsForModelTraining_twostage_asreml_2021May10.rds&quot;</span>))</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>blups <span class="sc">%&gt;%</span> </span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(Trait,blups) <span class="sc">%&gt;%</span> </span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unnest</span>(blups) <span class="sc">%&gt;%</span> </span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>(GID) <span class="sc">%$%</span> GID <span class="ot">-&gt;</span> gidWithBLUPs</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>genotypedWithBLUPs<span class="ot">&lt;-</span>gidWithBLUPs[gidWithBLUPs <span class="sc">%in%</span> sampleids<span class="sc">$</span>V1]</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(genotypedWithBLUPs) <span class="co"># 7960</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>ped<span class="ot">&lt;-</span><span class="fu">read.table</span>(here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;output&quot;</span>,<span class="st">&quot;verified_ped.txt&quot;</span>),</span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>                <span class="at">header =</span> T, <span class="at">stringsAsFactors =</span> F)</span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>pednames<span class="ot">&lt;-</span><span class="fu">union</span>(ped<span class="sc">$</span>FullSampleName,</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>                <span class="fu">union</span>(ped<span class="sc">$</span>SireID,ped<span class="sc">$</span>DamID))</span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(pednames) <span class="co"># 4384</span></span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>samples2keep<span class="ot">&lt;-</span><span class="fu">union</span>(genotypedWithBLUPs,pednames)</span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(samples2keep) <span class="co"># 8013</span></span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a><span class="co"># write a sample list to disk for downstream purposes</span></span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a><span class="co"># format suitable for subsetting with --keep in plink</span></span>
+<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a><span class="fu">write.table</span>(<span class="fu">tibble</span>(<span class="at">FID=</span><span class="dv">0</span>,<span class="at">IID=</span>samples2keep),</span>
+<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a>            <span class="at">file=</span>here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;output&quot;</span>,<span class="st">&quot;samples2keep_IITA_2021May13.txt&quot;</span>),</span>
+<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a>            <span class="at">row.names =</span> F, <span class="at">col.names =</span> F, <span class="at">quote =</span> F)</span></code></pre></div>
+<p>Add sample ID’s</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>hapids<span class="ot">&lt;-</span>sampleids <span class="sc">%&gt;%</span> </span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(V1,V2) <span class="sc">%&gt;%</span> </span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">SampleIndex=</span><span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(.)) <span class="sc">%&gt;%</span> </span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">HapA=</span>V1,<span class="at">HapB=</span>V2) <span class="sc">%&gt;%</span> </span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="at">cols=</span><span class="fu">c</span>(HapA,HapB),</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>               <span class="at">names_to =</span> <span class="st">&quot;Haplo&quot;</span>,<span class="at">values_to =</span> <span class="st">&quot;SampleID&quot;</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">HapID=</span><span class="fu">paste0</span>(SampleID,<span class="st">&quot;_&quot;</span>,Haplo)) <span class="sc">%&gt;%</span> </span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(SampleIndex)</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(haps)<span class="ot">&lt;-</span><span class="fu">c</span>(<span class="st">&quot;Chr&quot;</span>,<span class="st">&quot;HAP_ID&quot;</span>,<span class="st">&quot;Pos&quot;</span>,<span class="st">&quot;REF&quot;</span>,<span class="st">&quot;ALT&quot;</span>,hapids<span class="sc">$</span>HapID)</span></code></pre></div>
+<p>Subset haps</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>hapids2keep<span class="ot">&lt;-</span>hapids <span class="sc">%&gt;%</span> <span class="fu">filter</span>(SampleID <span class="sc">%in%</span> samples2keep)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>hapids2keep<span class="sc">$</span>HapID</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(haps) <span class="co"># [1] 68814 43717</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>haps<span class="ot">&lt;-</span>haps[,<span class="fu">c</span>(<span class="st">&quot;Chr&quot;</span>,<span class="st">&quot;HAP_ID&quot;</span>,<span class="st">&quot;Pos&quot;</span>,<span class="st">&quot;REF&quot;</span>,<span class="st">&quot;ALT&quot;</span>,hapids2keep<span class="sc">$</span>HapID)]</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(haps) <span class="co"># [1] 68814 16031</span></span></code></pre></div>
+<p>Format, transpose, convert to matrix and save!</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>haps <span class="sc">%&lt;&gt;%</span> </span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">HAP_ID=</span><span class="fu">gsub</span>(<span class="st">&quot;:&quot;</span>,<span class="st">&quot;_&quot;</span>,HAP_ID)) <span class="sc">%&gt;%</span> </span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">column_to_rownames</span>(<span class="at">var =</span> <span class="st">&quot;HAP_ID&quot;</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>Chr,<span class="sc">-</span>Pos,<span class="sc">-</span>REF,<span class="sc">-</span>ALT)</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>haps <span class="sc">%&lt;&gt;%</span> <span class="fu">t</span>(.) <span class="sc">%&gt;%</span> <span class="fu">as.matrix</span>(.)</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(haps,<span class="at">file=</span>here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;data&quot;</span>,<span class="st">&quot;haps_IITA_2021May13.rds&quot;</span>)</span></code></pre></div>
+</div>
+<div id="make-dosages-from-haps" class="section level1">
+<h1>Make dosages from haps</h1>
+<p>To ensure consistency in allele counting, create dosage from haps manually.</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>dosages<span class="ot">&lt;-</span>haps <span class="sc">%&gt;%</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.data.frame</span>(.) <span class="sc">%&gt;%</span> </span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rownames_to_column</span>(<span class="at">var =</span> <span class="st">&quot;GID&quot;</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">separate</span>(GID,<span class="fu">c</span>(<span class="st">&quot;SampleID&quot;</span>,<span class="st">&quot;Haplo&quot;</span>),<span class="st">&quot;_Hap&quot;</span>,<span class="at">remove =</span> T) <span class="sc">%&gt;%</span> </span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>Haplo) <span class="sc">%&gt;%</span> </span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(SampleID) <span class="sc">%&gt;%</span> </span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="fu">across</span>(<span class="fu">everything</span>(),<span class="sc">~</span><span class="fu">sum</span>(.))) <span class="sc">%&gt;%</span> </span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">column_to_rownames</span>(<span class="at">var =</span> <span class="st">&quot;SampleID&quot;</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>  as.matrix</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(dosages,<span class="at">file=</span>here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;data&quot;</span>,<span class="st">&quot;dosages_IITA_2021May13.rds&quot;</span>))</span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a><span class="co"># &gt; dim(dosages)</span></span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a><span class="co"># [1]  8013 68814</span></span></code></pre></div>
+</div>
+<div id="variant-filters" class="section level1">
+<h1>Variant filters</h1>
+<p><strong>Apply a MAF filter and lightly LD prune:</strong> The number of markers in the “raw” dataset (~68K) is ~3X the number used in the mate selection paper and I think more than is necessary. There is a burden incurred because we have to compute and store in memory (and on disk) <span class="math inline">\(N_{snp} \times N_{snp}\)</span> recombination frequency matrices.</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># library(tidyverse); library(magrittr)</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="co"># pathIn&lt;-&quot;/home/jj332_cas/marnin/implementGMSinCassava/data/&quot;</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="co"># pathOut&lt;-pathIn</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="co"># vcfName&lt;-&quot;AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719&quot;</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="co"># write.table(tibble(FID=0,IID=samples2keep),</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a><span class="co">#             file=here::here(&quot;output&quot;,&quot;samples2keep_IITA_2021May13.txt&quot;),</span></span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a><span class="co">#             row.names = F, col.names = F, quote = F)</span></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a><span class="co"># ped2check&lt;-read.table(file=here::here(&quot;output&quot;,&quot;ped2genos.txt&quot;),</span></span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a><span class="co">#                       header = F, stringsAsFactors = F)</span></span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a><span class="co"># # pednames&lt;-union(ped2check$V1,union(ped2check$V2,ped2check$V3)) %&gt;% </span></span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a><span class="co"># #   tibble(FID=0,IID=.)</span></span>
+<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a><span class="co"># # write.table(pednames,file=here::here(&quot;output&quot;,&quot;pednames2keep.txt&quot;), </span></span>
+<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a><span class="co"># #             row.names = F, col.names = F, quote = F)</span></span></code></pre></div>
+<pre class="plink"><code>cd /home/jj332_cas/marnin/implementGMSinCassava/
+export PATH=/programs/plink-1.9-x86_64-beta3.30:$PATH;
+plink --bfile data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719 \
+  --keep output/samples2keep_IITA_2021May13.txt \
+  --maf 0.01 \
+  --indep-pairwise 50 25 0.98 \
+  --out output/samples2keep_IITA_MAFpt01_prune50_25_pt98;</code></pre>
+<p>Used plink to output a list of pruned SNPs.</p>
+<p>Next, subset the columns of <code>haps</code> and <code>dosages</code> in R.</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse); <span class="fu">library</span>(magrittr); </span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>haps<span class="ot">&lt;-</span><span class="fu">readRDS</span>(<span class="at">file=</span>here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;data&quot;</span>,<span class="st">&quot;haps_IITA_2021May13.rds&quot;</span>))</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>dosages<span class="ot">&lt;-</span><span class="fu">readRDS</span>(<span class="at">file=</span>here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;data&quot;</span>,<span class="st">&quot;dosages_IITA_2021May13.rds&quot;</span>))</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>snps2keep<span class="ot">&lt;-</span><span class="fu">read.table</span>(here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;output&quot;</span>,</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>                      <span class="st">&quot;samples2keep_IITA_MAFpt01_prune50_25_pt98.prune.in&quot;</span>),</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>           <span class="at">header =</span> F, <span class="at">stringsAsFactors =</span> F)</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>snps2keep<span class="ot">&lt;-</span><span class="fu">tibble</span>(<span class="at">HapSNP_ID=</span><span class="fu">colnames</span>(haps)) <span class="sc">%&gt;%</span> </span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">separate</span>(HapSNP_ID,<span class="fu">c</span>(<span class="st">&quot;Chr&quot;</span>,<span class="st">&quot;Pos&quot;</span>,<span class="st">&quot;Ref&quot;</span>,<span class="st">&quot;Alt&quot;</span>),<span class="at">remove =</span> F) <span class="sc">%&gt;%</span> </span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">SNP_ID=</span><span class="fu">paste0</span>(<span class="st">&quot;S&quot;</span>,Chr,<span class="st">&quot;_&quot;</span>,Pos)) <span class="sc">%&gt;%</span> </span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(SNP_ID <span class="sc">%in%</span> snps2keep<span class="sc">$</span>V1)</span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>haps<span class="ot">&lt;-</span>haps[,snps2keep<span class="sc">$</span>HapSNP_ID]</span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>dosages<span class="ot">&lt;-</span>dosages[,snps2keep<span class="sc">$</span>HapSNP_ID]</span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a><span class="co"># dim(haps); dim(dosages); haps[1:5,1:10]</span></span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(haps,<span class="at">file=</span>here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;data&quot;</span>,<span class="st">&quot;haps_IITA_filtered_2021May13.rds&quot;</span>))</span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(dosages,<span class="at">file=</span>here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;data&quot;</span>,<span class="st">&quot;dosages_IITA_filtered_2021May13.rds&quot;</span>))</span></code></pre></div>
+</div>
+<div id="make-add-and-dom-grms-from-dosages" class="section level1">
+<h1>Make Add and Dom GRMs from dosages</h1>
+<div class="sourceCode" id="cb24"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># activate multithread OpenBLAS for fast matrix algebra</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">OMP_NUM_THREADS=</span>56</span></code></pre></div>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>dosages<span class="ot">&lt;-</span><span class="fu">readRDS</span>(<span class="at">file=</span>here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;data&quot;</span>,<span class="st">&quot;dosages_IITA_filtered_2021May13.rds&quot;</span>))</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>A<span class="ot">&lt;-</span>predCrossVar<span class="sc">::</span><span class="fu">kinship</span>(dosages,<span class="at">type=</span><span class="st">&quot;add&quot;</span>)</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>D<span class="ot">&lt;-</span>predCrossVar<span class="sc">::</span><span class="fu">kinship</span>(dosages,<span class="at">type=</span><span class="st">&quot;dom&quot;</span>)</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(A,<span class="at">file=</span>here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;output&quot;</span>,<span class="st">&quot;kinship_A_IITA_2021May13.rds&quot;</span>))</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(D,<span class="at">file=</span>here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;output&quot;</span>,<span class="st">&quot;kinship_D_IITA_2021May13.rds&quot;</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb26"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> /home/mw489/implementGMSinCassava/<span class="kw">;</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="ex">screen</span><span class="kw">;</span> </span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="ex">singularity</span> shell rocker.sif<span class="kw">;</span> <span class="ex">R</span></span></code></pre></div>
+<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>dosages<span class="ot">&lt;-</span><span class="fu">readRDS</span>(<span class="at">file=</span>here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;data&quot;</span>,<span class="st">&quot;dosages_IITA_filtered_2021May13.rds&quot;</span>))</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;code&quot;</span>,<span class="st">&quot;gsFunctions.R&quot;</span>))</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>RhpcBLASctl<span class="sc">::</span><span class="fu">blas_set_num_threads</span>(<span class="dv">56</span>)</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>D<span class="ot">&lt;-</span><span class="fu">kinship</span>(dosages,<span class="at">type=</span><span class="st">&quot;domGenotypic&quot;</span>)</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(D,<span class="at">file=</span>here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;output&quot;</span>,<span class="st">&quot;kinship_domGenotypic_IITA_2021July5.rds&quot;</span>))</span></code></pre></div>
+</div>
+<div id="genetic-map" class="section level1">
+<h1>Genetic Map</h1>
+<div class="sourceCode" id="cb28"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> <span class="at">-r</span> /home/jj332_cas/CassavaGenotypeData/CassavaGeneticMap /home/jj332_cas/marnin/implementGMSinCassava/data/</span></code></pre></div>
+<div class="sourceCode" id="cb29"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="co"># activate multithread OpenBLAS for fast matrix algebra</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">OMP_NUM_THREADS=</span>56</span></code></pre></div>
+<p><a href="https://wolfemd.github.io/NaCRRI_2020GS/Imputation_EastAfrica_StageI_82819.html#Genetic_Map_for_Beagle_-_V2">Creating the map used for Beagle-imputation in 2019</a>: In 2019, I obtained a ICGMC-derived genetic map, I <em>think</em> from Guillaume Bauchet and used it to create a map I’ve been using for imputation, which has 25K markers (Beagle interpolates the map to the markers genotyped in the panel).</p>
+<p><em>However,</em> the recombination frequency matrix and thus cross-variance predictions needs to have all positions for which we have marker effects. It means I have to interpolate a map from the original file <code>cassava_cM_pred.v6.allchr.txt</code>. See below:</p>
+<div class="sourceCode" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse); <span class="fu">library</span>(magrittr)</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>dosages<span class="ot">&lt;-</span><span class="fu">readRDS</span>(<span class="at">file=</span>here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;data&quot;</span>,<span class="st">&quot;dosages_IITA_filtered_2021May13.rds&quot;</span>))</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a><span class="co"># genmap&lt;-tibble(Chr=1:18) %&gt;% </span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a><span class="co">#   mutate(geneticMap=map(Chr,~read.table(here::here(&quot;data/CassavaGeneticMap&quot;,</span></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a><span class="co">#                                                    paste0(&quot;chr&quot;,.,&quot;_cassava_cM_pred.v6_91019.map&quot;)),</span></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a><span class="co">#                                         header = F, stringsAsFactors = F)))</span></span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>genmap<span class="ot">&lt;-</span><span class="fu">read.table</span>(here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;data/CassavaGeneticMap&quot;</span>,</span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a>                              <span class="st">&quot;cassava_cM_pred.v6.allchr.txt&quot;</span>),</span>
+<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>           <span class="at">header =</span> F, <span class="at">stringsAsFactors =</span> F,<span class="at">sep=</span><span class="st">&#39;;&#39;</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">SNP_ID=</span>V1,<span class="at">Pos=</span>V2,<span class="at">cM=</span>V3) <span class="sc">%&gt;%</span> </span>
+<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a>  as_tibble</span>
+<span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a>snps_genmap<span class="ot">&lt;-</span><span class="fu">tibble</span>(<span class="at">DoseSNP_ID=</span><span class="fu">colnames</span>(dosages)) <span class="sc">%&gt;%</span> </span>
+<span id="cb30-15"><a href="#cb30-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">separate</span>(DoseSNP_ID,<span class="fu">c</span>(<span class="st">&quot;Chr&quot;</span>,<span class="st">&quot;Pos&quot;</span>,<span class="st">&quot;Ref&quot;</span>,<span class="st">&quot;Alt&quot;</span>),<span class="at">remove =</span> F) <span class="sc">%&gt;%</span> </span>
+<span id="cb30-16"><a href="#cb30-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">SNP_ID=</span><span class="fu">paste0</span>(<span class="st">&quot;S&quot;</span>,Chr,<span class="st">&quot;_&quot;</span>,Pos)) <span class="sc">%&gt;%</span> </span>
+<span id="cb30-17"><a href="#cb30-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(genmap <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">everything</span>(),as.character)))</span>
+<span id="cb30-18"><a href="#cb30-18" aria-hidden="true" tabindex="-1"></a><span class="co"># snps_genmap %&gt;% </span></span>
+<span id="cb30-19"><a href="#cb30-19" aria-hidden="true" tabindex="-1"></a><span class="co">#   ggplot(.,aes(x=as.integer(Pos),y=as.numeric(cM))) + </span></span>
+<span id="cb30-20"><a href="#cb30-20" aria-hidden="true" tabindex="-1"></a><span class="co">#   geom_point() + </span></span>
+<span id="cb30-21"><a href="#cb30-21" aria-hidden="true" tabindex="-1"></a><span class="co">#   theme_bw() + </span></span>
+<span id="cb30-22"><a href="#cb30-22" aria-hidden="true" tabindex="-1"></a><span class="co">#   facet_wrap(~Chr)</span></span></code></pre></div>
+<div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>interpolate_genmap<span class="ot">&lt;-</span><span class="cf">function</span>(data){</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># for each chromosome map</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># find and _decrements_ in the genetic map distance</span></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># fix them to the cumulative max to force map to be only increasing</span></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># fit a spline for each chromosome</span></span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Use it to predict values for positions not previously on the map</span></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># fix them AGAIN (in case) to the cumulative max, forcing map to only increase</span></span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>  data_forspline<span class="ot">&lt;-</span>data <span class="sc">%&gt;%</span> </span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(cM)) <span class="sc">%&gt;%</span> </span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">cumMax=</span><span class="fu">cummax</span>(cM),</span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a>           <span class="at">cumIncrement=</span>cM<span class="sc">-</span>cumMax) <span class="sc">%&gt;%</span> </span>
+<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(cumIncrement<span class="sc">&gt;=</span><span class="dv">0</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(<span class="sc">-</span>cumMax,<span class="sc">-</span>cumIncrement)</span>
+<span id="cb31-14"><a href="#cb31-14" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb31-15"><a href="#cb31-15" aria-hidden="true" tabindex="-1"></a>  spline<span class="ot">&lt;-</span>data_forspline <span class="sc">%$%</span> <span class="fu">smooth.spline</span>(<span class="at">x=</span>Pos,<span class="at">y=</span>cM,<span class="at">spar =</span> <span class="fl">0.75</span>)</span>
+<span id="cb31-16"><a href="#cb31-16" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb31-17"><a href="#cb31-17" aria-hidden="true" tabindex="-1"></a>  splinemap<span class="ot">&lt;-</span><span class="fu">predict</span>(spline,<span class="at">x =</span> data<span class="sc">$</span>Pos) <span class="sc">%&gt;%</span> </span>
+<span id="cb31-18"><a href="#cb31-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">as_tibble</span>(.) <span class="sc">%&gt;%</span> </span>
+<span id="cb31-19"><a href="#cb31-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rename</span>(<span class="at">Pos=</span>x,<span class="at">cM=</span>y) <span class="sc">%&gt;%</span> </span>
+<span id="cb31-20"><a href="#cb31-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">cumMax=</span><span class="fu">cummax</span>(cM),</span>
+<span id="cb31-21"><a href="#cb31-21" aria-hidden="true" tabindex="-1"></a>           <span class="at">cumIncrement=</span>cM<span class="sc">-</span>cumMax) <span class="sc">%&gt;%</span> </span>
+<span id="cb31-22"><a href="#cb31-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">cM=</span>cumMax) <span class="sc">%&gt;%</span> </span>
+<span id="cb31-23"><a href="#cb31-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(<span class="sc">-</span>cumMax,<span class="sc">-</span>cumIncrement)</span>
+<span id="cb31-24"><a href="#cb31-24" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb31-25"><a href="#cb31-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(splinemap) </span>
+<span id="cb31-26"><a href="#cb31-26" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>splined_snps_genmap<span class="ot">&lt;-</span>snps_genmap <span class="sc">%&gt;%</span> </span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>cM) <span class="sc">%&gt;%</span> </span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Pos=</span><span class="fu">as.numeric</span>(Pos)) <span class="sc">%&gt;%</span> </span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(snps_genmap <span class="sc">%&gt;%</span> </span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>              <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">c</span>(Pos,cM),as.numeric)) <span class="sc">%&gt;%</span> </span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>              <span class="fu">arrange</span>(Chr,Pos) <span class="sc">%&gt;%</span> </span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>              <span class="fu">nest</span>(<span class="sc">-</span>Chr) <span class="sc">%&gt;%</span> </span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>              <span class="fu">mutate</span>(<span class="at">data=</span><span class="fu">map</span>(data,interpolate_genmap)) <span class="sc">%&gt;%</span> </span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>              <span class="fu">unnest</span>(data)) <span class="sc">%&gt;%</span> </span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a>  distinct</span></code></pre></div>
+<div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">all</span>(splined_snps_genmap<span class="sc">$</span>DoseSNP_ID <span class="sc">==</span> <span class="fu">colnames</span>(dosages))</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a><span class="co"># [1] TRUE</span></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(splined_snps_genmap,<span class="at">file=</span>here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;data&quot;</span>,<span class="st">&quot;genmap_2021May13.rds&quot;</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb34"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>splined_snps_genmap <span class="sc">%&gt;%</span> </span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Map=</span><span class="st">&quot;Spline&quot;</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bind_rows</span>(snps_genmap <span class="sc">%&gt;%</span> </span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>              <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">c</span>(Pos,cM),as.numeric)) <span class="sc">%&gt;%</span> </span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>              <span class="fu">arrange</span>(Chr,Pos) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">Map=</span><span class="st">&quot;Data&quot;</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(.,<span class="fu">aes</span>(<span class="at">x=</span>Pos,<span class="at">y=</span>cM,<span class="at">color=</span>Map),<span class="at">alpha=</span><span class="fl">0.5</span>,<span class="at">size=</span><span class="fl">0.75</span>) <span class="sc">+</span> </span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> </span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span> <span class="fu">facet_wrap</span>(<span class="sc">~</span><span class="fu">as.integer</span>(Chr), <span class="at">scales=</span><span class="st">&#39;free_x&#39;</span>)</span></code></pre></div>
+</div>
+<div id="recomb.-freq.-matrix" class="section level1">
+<h1>Recomb. freq. matrix</h1>
+<p>Construct a matrix of recombination frequencies at loci for all study loci. Pre-compute 1-2c to save time predicting cross variance.</p>
+<div class="sourceCode" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(predCrossVar)</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>genmap<span class="ot">&lt;-</span><span class="fu">readRDS</span>(<span class="at">file=</span>here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;data&quot;</span>,<span class="st">&quot;genmap_2021May13.rds&quot;</span>))</span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>m<span class="ot">&lt;-</span>genmap<span class="sc">$</span>cM;</span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(m)<span class="ot">&lt;-</span>genmap<span class="sc">$</span>DoseSNP_ID</span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>recombFreqMat<span class="ot">&lt;-</span><span class="dv">1</span><span class="sc">-</span>(<span class="dv">2</span><span class="sc">*</span><span class="fu">genmap2recombfreq</span>(m,<span class="at">nChr =</span> <span class="dv">18</span>))</span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(recombFreqMat,<span class="at">file=</span>here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;data&quot;</span>,<span class="st">&quot;recombFreqMat_1minus2c_2021May13.rds&quot;</span>))</span></code></pre></div>
+</div>
+<div id="todo-pca" class="section level1">
+<h1>[TODO] PCA</h1>
+</div>
+<div id="next-step" class="section level1">
+<h1>Next step</h1>
+<ol start="5" style="list-style-type: decimal">
+<li><a href="05-CrossValidation.html">Parent-wise cross-validation</a>: Compute parent-wise cross-validation folds using the validated pedigree. Fit models to get marker effects and make subsequent predictions of cross means and (co)variances.</li>
+</ol>
+<br>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
+<span class="glyphicon glyphicon-wrench" aria-hidden="true"></span> Session information
+</button>
+</p>
+<div id="workflowr-sessioninfo" class="collapse">
+<div class="sourceCode" id="cb36"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span></code></pre></div>
+</div>
+</div>
+
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+http://docs.mathjax.org/en/latest/configuration.html.  This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
