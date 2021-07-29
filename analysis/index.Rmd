@@ -1,5 +1,5 @@
 ---
-title: "Implementation Tests for Genomic Mate Selection in Cassava"
+title: "Integrating genomic mate selection into the NextGen Cassava pipeline"
 site: workflowr::wflow_site
 output:
   workflowr::wflow_html:
@@ -8,19 +8,30 @@ editor_options:
   chunk_output_type: console
 ---
 
-Available data and software make it hypothetically possible to predict cross variances (mendelian sampling variance) and use it to select mates, *e.g.* using the usefuleness criterion (UC).
+We saw in [an initial study](https://www.biorxiv.org/content/10.1101/2021.01.05.425443v1), promising results regarding the prediction of genetic variance in cassava crosses. In that study, we used a high-quality validated pedigree-based phasing pipeline for the marker data. That pipeline is considerably more involved and may not be implementable on the entire breeding germplasm.
 
-New information also adds new sources of uncertainty:
+In this project, I am integrating cross-variance predictions into our current genomics-enabled breeding pipeline leveraging available data. I conduct additional tests to assess whether current Beagle imputed-and-phased data and a basic pedigree-validation step are sufficient.
 
--   Phasing error
--   Use of a (or various) genetic map(s) to predict recombination frequencies
--   Inherent uncertainty in marker effects and their effect on variance prediction
-
-We used cross-validation to estimate the accuracy of predicting means, variances and the usefulness of crosses on selection indices. That analysis leveraged a high-quality validated pedigree-based phasing pipeline. That pipeline is considerably more involved and may not be implementable on the entire breeding germplasm.
-
-Here I test cross-variance prediction in our current breeding pipeline's available data. We will assess whether and how to start using cross variance predictions in practice.
+This project should form the template for genomic mate selection in NextGen Cassava.
 
 [**See the Results here!**](07-Results.html)
+
+We will soon implement in [summer 2021 for planning fall crossing nurseries and with new GS C5 DArTseqLD data](https://wolfemd.github.io/IITA_2021GS/).
+
+# What's new?
+
+1.  Functions previously used in NextGen GS pipeline (`code/gsFunctions.R`) migrate to and receive an upgrade (`code/gmsFunctions.R`) to support genomic mate selection. The `runGenomicPredictions()` function fits genomic mixed-models and produces GEBV/GETGV for existing germplasm as it did previously, but now also returns marker effects and provides a direct input to the new `predictCrosses()` function, which handles predicting mate selection criteria.
+
+2.  Support for a directional dominance model to incorporate genome-wide homozygosity-effects (inbreeding) into predictions.
+
+3.  Support for selection indices.
+
+4.  Improved version of **predCrossVar** functions at `code/predCrossVar.R`
+
+    -   eventually to be integrated into the R package
+    -   faster unless you want to use the Bayesian approach.
+
+5.  Creation of a single-function interface to accomplish parent-wise cross-validation at `code/parentWiseCrossVal.R`. Provides estimates of (selection index) accuracy predicting family means and variances.
 
 # Analysis steps
 
@@ -44,7 +55,7 @@ Here I test cross-variance prediction in our current breeding pipeline's availab
     -   **Models "AD"** (classic BV+DD partition of additive+dominance) and **"DirDom"** (genotypic add+dom partition with genome-wide homozygosity effect).
     -   Include use of selection index weights to compute index accuracy.
     -   Include new models and index predictions in standard fold cross-validation in addition to the parent-wise scheme / function.
-    -   [ ] Run cross-validation using both Beagle- vs. PHG-imputed and phased marker data to compare their quality.
+    -   [ ] ***[Coming soon]*** Run cross-validation using both Beagle- vs. PHG-imputed and phased marker data to compare their quality.
 
 7.  [Genomic predictions](06-GenomicPredictions.html):
 
@@ -62,11 +73,11 @@ Here I test cross-variance prediction in our current breeding pipeline's availab
 
 # Data and code repository access
 
-[**FULL REPOSITORY DOWNLOAD FROM CASSAVABASE FTP SERVER**](ftp://ftp.cassavabase.org/marnin_datasets/implementGMSinCassava/output/)
+[CLICK HERE FOR ACCESS TO THE FULL REPOSITORY](ftp://ftp.cassavabase.org/marnin_datasets/implementGMSinCassava/) (select "Guest" credentials when prompted by the Cassavabase FTP server)
 
 or
 
-[**DOWNLOAD FROM GitHub**](https://github.com/wolfemd/implementGMSinCassava/tree/master/output)**\***
+[**DOWNLOAD FROM GitHub\***](https://github.com/wolfemd/implementGMSinCassava/)
 
 \*GitHub only hosts files max 50 Mb.
 
@@ -78,11 +89,23 @@ or
 4.  `docs/`: compiled **.html**, "knitted" from **.Rmd**
 5.  `code/`: supporting functions sourced in `analysis/*.Rmd`'s.
 
-**FILES OF INTEREST**: everything is in the `output/` sub-directory.
+**FILES OF INTEREST**: everything is in the `output/` sub-directory ([click here](ftp://ftp.cassavabase.org/marnin_datasets/implementGMSinCassava/output/) and select "Guest" credentials when prompted by the Cassavabase FTP server).
 
--   **GEBVs for parent selection:** \`\`
--   **GETGVs for variety advancement:** \`\`
+-   **GEBVs for parent selection and GETGVs for variety advancement:**
+
+    -   [download DirDom model genomic predictions](ftp://ftp.cassavabase.org/marnin_datasets/implementGMSinCassava/output/genomicPredictions_ModelDirDom.csv)
+
+    -   [download AD model genomic predictions](ftp://ftp.cassavabase.org/marnin_datasets/implementGMSinCassava/output/genomicPredictions_ModelAD.csv)
+
+-   **Predicted means, variances and usefulness of crosses among top parents:**
+
+    -   [download DirDom model genomic mate predictions](ftp://ftp.cassavabase.org/marnin_datasets/implementGMSinCassava/output/genomicMatePredictions_top121parents_ModelDirDom.csv)
+
+    -   [download AD model genomic mate predictions](ftp://ftp.cassavabase.org/marnin_datasets/implementGMSinCassava/output/genomicMatePredictions_top121parents_ModelAD.csv)
+
 -   Kinship matrices, dosages, haplotype matrix, recombination frequency matrix, genetic map files
+
+genomicPredictions_ModelDirDom.csv genomicMatePredictions_top121parents_ModelDirDom.csv genomicPredictions_ModelAD.csv genomicMatePredictions_top121parents_ModelAD.csv
 
 # Analyses To Do
 
