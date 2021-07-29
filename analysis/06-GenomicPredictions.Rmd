@@ -485,7 +485,14 @@ crossPreds_dirdom<-predictCrosses(modelType="DirDom",stdSelInt = 2.67,
                                   ncores=20,nBLASthreads=5)
 runtime<-proc.time()[3]-start; runtime/60
 saveRDS(crossPreds_dirdom,file = here::here("output","genomicMatePredictions_top121parents_ModelDirDom.rds"))
+# elapsed
+#  2195.6
+# # A tibble: 1 x 2
+#   tidyPreds              rawPreds        
+#   <list>                 <list>          
+# 1 <tibble [177,144 × 9]> <named list [2]>
 
+# 36.6 hrs for 7381 crosses. Or about 5 hours per 1000 crosses
 ```
 
 cbsulm17 - July 25 at 7:30pm
@@ -500,40 +507,86 @@ crossPreds_ad<-predictCrosses(modelType="AD",stdSelInt = 2.67,
                               ncores=20,nBLASthreads=5)
 runtime<-proc.time()[3]-start; runtime/60
 saveRDS(crossPreds_ad,file = here::here("output","genomicMatePredictions_top121parents_ModelAD.rds"))
+# elapsed
+# 1511.56
+# # A tibble: 1 x 2
+#   tidyPreds              rawPreds        
+#   <list>                 <list>          
+# 1 <tibble [177,144 × 9]> <named list [2]>
+
+# 1511.56 or 25.33 hrs for 7381 crosses 
+
+# About 3.4 hrs per 1000 crosses?
 ```
 
-# [TO DO] Write predictions to disk
+# Write tidy breeder-friendly predictions to disk
 
 Add genetic groups and tidy format
+```{r output tidy csv of gebv/getgv}
+library(tidyverse);
 
-```{r}
-# unique_gids<-predModelA %>%
-#   dplyr::select(genomicPredOut) %>%
-#   unnest(genomicPredOut) %>%
-#   select(-varcomps) %>%
-#   unnest(gblups) %$%
-#   GID %>%
-#   unique
-# 
-# c1a<-unique_gids %>%
-#   grep("c1a",.,value = T,ignore.case = T) %>%
-#   union(.,unique_gids %>%
-#           grep("^F",.,value = T,ignore.case = T) %>%
-#           grep("c1b",.,value = T,ignore.case = T,invert = T))
-# c1b<-unique_gids%>% grep("c1b",.,value = T,ignore.case = T)
-# c2a<-unique_gids %>%
-#   grep("C2a",.,value = T,ignore.case = T) %>%
-#   grep("NR17",.,value = T,ignore.case = T)
-# c2b<-unique_gids %>%
-#   grep("C2b",.,value = T,ignore.case = T) %>%
-#   .[!. %in% c(c1a,c1b,c2a)]
-# c3a<-unique_gids %>%
-#   grep("C3a",.,value = T,ignore.case = T) %>%
-#   .[!. %in% c(c1a,c1b,c2a,c2b)]
-# c3b<-unique_gids %>%
-#   grep("NR20C3",.,value = T,ignore.case = T) %>%
-#   .[!. %in% c(c1a,c1b,c2a,c2b,c3a)]
-# nrTP<-setdiff(unique_gids,unique(c(c1a,c1b,c2a,c2b,c3a,c3b)))
+gpreds_ad<-readRDS(file = here::here("output","genomicPredictions_ModelAD.rds")) 
+gpreds_ad$gblups[[1]] %>% 
+  mutate(GeneticGroup=case_when(grepl("2013_|TMS13",GID)~"C1",
+                                grepl("TMS14",GID)~"C2",
+                                grepl("TMS15",GID)~"C3",
+                                grepl("TMS18",GID)~"C4",
+                                !grepl("2013_|TMS13|TMS14|TMS15|TMS18",GID)~"PreGS"),
+         GeneticGroup=factor(GeneticGroup,levels = c("PreGS","C1","C2","C3","C4"))) %>% 
+  relocate(GeneticGroup,.after = "predOf") %>% 
+  arrange(predOf,desc(SELIND)) %>% 
+  write.csv(.,file = here::here("output","genomicPredictions_ModelAD.csv"),
+            row.names = F)
+
+gpreds_dirdom<-readRDS(file = here::here("output","genomicPredictions_ModelDirDom.rds"))
+gpreds_dirdom$gblups[[1]] %>% 
+  mutate(GeneticGroup=case_when(grepl("2013_|TMS13",GID)~"C1",
+                                grepl("TMS14",GID)~"C2",
+                                grepl("TMS15",GID)~"C3",
+                                grepl("TMS18",GID)~"C4",
+                                !grepl("2013_|TMS13|TMS14|TMS15|TMS18",GID)~"PreGS"),
+         GeneticGroup=factor(GeneticGroup,levels = c("PreGS","C1","C2","C3","C4"))) %>% 
+  relocate(GeneticGroup,.after = "predOf") %>% 
+  arrange(predOf,desc(SELIND)) %>% 
+  write.csv(.,file = here::here("output","genomicPredictions_ModelDirDom.csv"),
+            row.names = F)
+```
+
+```{r output tidy csv of usefulness predictions}
+crossPreds_dirdom<-readRDS(file = here::here("output","genomicMatePredictions_top121parents_ModelDirDom.rds"))
+crossPreds_ad<-readRDS(file = here::here("output","genomicMatePredictions_top121parents_ModelAD.rds"))
+
+crossPreds_ad$tidyPreds[[1]] %>% 
+  mutate(sireGroup=case_when(grepl("2013_|TMS13",sireID)~"C1",
+                             grepl("TMS14",sireID)~"C2",
+                             grepl("TMS15",sireID)~"C3",
+                             grepl("TMS18",sireID)~"C4",
+                             !grepl("2013_|TMS13|TMS14|TMS15|TMS18",sireID)~"PreGS"),
+         damGroup=case_when(grepl("2013_|TMS13",damID)~"C1",
+                            grepl("TMS14",damID)~"C2",
+                            grepl("TMS15",damID)~"C3",
+                            grepl("TMS18",damID)~"C4",
+                            !grepl("2013_|TMS13|TMS14|TMS15|TMS18",damID)~"PreGS"),
+         CrossGroup=paste0(sireGroup,"x",damGroup)) %>% 
+  relocate(contains("Group"),.before = "Nsegsnps") %>% 
+  write.csv(.,file = here::here("output","genomicMatePredictions_top121parents_ModelAD.csv"),
+            row.names = F)
+
+crossPreds_dirdom$tidyPreds[[1]] %>% 
+  mutate(sireGroup=case_when(grepl("2013_|TMS13",sireID)~"C1",
+                             grepl("TMS14",sireID)~"C2",
+                             grepl("TMS15",sireID)~"C3",
+                             grepl("TMS18",sireID)~"C4",
+                             !grepl("2013_|TMS13|TMS14|TMS15|TMS18",sireID)~"PreGS"),
+         damGroup=case_when(grepl("2013_|TMS13",damID)~"C1",
+                            grepl("TMS14",damID)~"C2",
+                            grepl("TMS15",damID)~"C3",
+                            grepl("TMS18",damID)~"C4",
+                            !grepl("2013_|TMS13|TMS14|TMS15|TMS18",damID)~"PreGS"),
+         CrossGroup=paste0(sireGroup,"x",damGroup)) %>% 
+  relocate(contains("Group"),.before = "Nsegsnps") %>% 
+  write.csv(.,file = here::here("output","genomicMatePredictions_top121parents_ModelDirDom.csv"),
+            row.names = F)
 ```
 
 Write CSV's
