@@ -621,7 +621,7 @@ crossPreds<-read.csv(here::here("output","genomicMatePredictions_top121parents_M
 
 I predicted 7381 crosses of 121 parents originally selected as the union of elite parents predicted by both DirDom *and* AD models. So not all these parents are the absolute top in terms of SI GETGV and the DirDom model, which I will plot below. Since I made the predictions for those extra parents, they are plotted here.
 
-```{r, fig.width=12}
+```{r, fig.width=9}
 for_selected_plot<-si_getgvs %>% 
   mutate(GeneticGroup=case_when(grepl("2013_|TMS13",GID)~"C1",
                                 grepl("TMS14",GID)~"C2",
@@ -703,7 +703,7 @@ In this case, the same 50 crosses are best for both $UC_{parent}$ (`predOf=="BV"
 
 First, display the entire set of predicted crosses, ranked by their selection index $UC_{variety}$. This will be more clear in the next plots with fewer families: the x-axis is simply the descending rank of predicted $UC_{variety}$ for each cross. The y-axis shows the mean (dot) and distribution quantiles (linerange) based on the predicted mean and standard deviation of each cross. Crosses are color coded according to the "genetic group" of the parents.
 
-```{r, fig.height=12}
+```{r, fig.width=10}
 forplot %>% 
   filter(predOf=="TGV") %>% 
   #slice_max(order_by = predUsefulness, n = 100) %>% 
@@ -716,7 +716,7 @@ forplot %>%
   stat_dist_pointinterval() +
   #stat_dist_gradientinterval(n=50) +
   scale_fill_viridis_d() + scale_color_viridis_d() + 
-  plottheme + theme()
+  plottheme + theme() + 
   labs(x = paste0("Cross Rank ",expression(bold("UC"["variety"]~" (TGV)"))),
        y = "Selection Index GETGV",
        title = "Predicted distribution (mean and variability) of all crosses")
@@ -757,10 +757,11 @@ forplot %>%
   filter(predOf=="TGV") %>% 
   arrange(desc(predUsefulness)) %>% 
   mutate(Rank=1:nrow(.)) %>% 
-  filter(grepl("C4",CrossGroup)) %>% slice(1:10)
+  filter(grepl("C4",CrossGroup)) %>% slice(1:10) %>% 
+  rmarkdown::paged_table()
 ```
 In this last plot, the area under the top 5% of each crosses predicted distribution is highlighted. The mean of individuals from under the highlighted area is the $UC_{variety}$. There are also 50 dots for each cross illustrating the hypothetical outcome of creating 50 progeny. 
-```{r, fig.height=12}
+```{r, fig.width=12}
 forplot %>% 
   filter(predOf=="TGV") %>% 
   slice_max(order_by = predUsefulness, n = 50) %>% 
@@ -784,7 +785,7 @@ forplot %>%
 ```
 Or for more clarity, just the top 5 crosses:
 
-```{r, fig.width=12}
+```{r, fig.width=10}
 forplot %>% 
   filter(predOf=="TGV") %>% 
   slice_max(order_by = predUsefulness, n = 5) %>% 
