@@ -438,6 +438,9 @@ div.tocify {
     <li>
       <a href="04-PreprocessDataFiles.html">Preprocessing input data</a>
     </li>
+    <li>
+      <a href="08-PHGfiles.html">Preprocess PHG files</a>
+    </li>
   </ul>
 </li>
 <li>
@@ -509,7 +512,7 @@ div.tocify {
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2021-07-14
+<strong>Last updated:</strong> 2021-07-29
 </p>
 <p>
 <strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 7 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 0
@@ -600,16 +603,16 @@ This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomwolfemdimplementGMSinCassavatree2953ee69dd0359ef4248148f5cfe318ffa6078e8targetblank2953ee6a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/wolfemd/implementGMSinCassava/tree/2953ee69dd0359ef4248148f5cfe318ffa6078e8" target="_blank">2953ee6</a> </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomwolfemdimplementGMSinCassavatreebc85a7d8a05ad57547715fd8d727fb1e9b7261aetargetblankbc85a7da"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/wolfemd/implementGMSinCassava/tree/bc85a7d8a05ad57547715fd8d727fb1e9b7261ae" target="_blank">bc85a7d</a> </a>
 </p>
 </div>
-<div id="strongRepositoryversionstrongahrefhttpsgithubcomwolfemdimplementGMSinCassavatree2953ee69dd0359ef4248148f5cfe318ffa6078e8targetblank2953ee6a" class="panel-collapse collapse">
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomwolfemdimplementGMSinCassavatreebc85a7d8a05ad57547715fd8d727fb1e9b7261aetargetblankbc85a7da" class="panel-collapse collapse">
 <div class="panel-body">
 <p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility.
 </p>
 <p>
-The results in this page were generated with repository version <a href="https://github.com/wolfemd/implementGMSinCassava/tree/2953ee69dd0359ef4248148f5cfe318ffa6078e8" target="_blank">2953ee6</a>. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
+The results in this page were generated with repository version <a href="https://github.com/wolfemd/implementGMSinCassava/tree/bc85a7d8a05ad57547715fd8d727fb1e9b7261ae" target="_blank">bc85a7d</a>. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
 </p>
 <p>
 Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
@@ -619,6 +622,7 @@ Ignored files:
     Ignored:    .DS_Store
     Ignored:    .Rhistory
     Ignored:    .Rproj.user/
+    Ignored:    analysis/.DS_Store
     Ignored:    analysis/accuracies.png
     Ignored:    analysis/fig2.png
     Ignored:    analysis/fig3.png
@@ -630,36 +634,47 @@ Untracked files:
     Untracked:  accuracies.png
     Untracked:  analysis/docs/
     Untracked:  analysis/speedUpPredCrossVar.Rmd
-    Untracked:  code/AlphaAssign-Python/
-    Untracked:  code/calcGameticLD.cpp
-    Untracked:  code/col_sums.cpp
-    Untracked:  code/convertDart2vcf.R
-    Untracked:  code/helloworld.cpp
-    Untracked:  code/imputationFunctions.R
-    Untracked:  code/matmult.cpp
-    Untracked:  code/misc.cpp
-    Untracked:  code/test.cpp
-    Untracked:  data/CassavaGeneticMap/
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.bed
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.bim
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.fam
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.hap.gz
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.log
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.nosex
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.sample
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.vcf.gz
     Untracked:  data/DatabaseDownload_2021May04/
-    Untracked:  data/GBSdataMasterList_31818.csv
-    Untracked:  data/IITA_GBStoPhenoMaster_33018.csv
-    Untracked:  data/NRCRI_GBStoPhenoMaster_40318.csv
-    Untracked:  data/PedigreeGeneticGainCycleTime_aafolabi_01122020.xls
     Untracked:  data/blups_forCrossVal.rds
-    Untracked:  data/chr1_RefPanelAndGSprogeny_ReadyForGP_72719.fam
+    Untracked:  data/config.txt
+    Untracked:  data/config_mw.txt
+    Untracked:  data/dosages_IITA_2021May13.rds
     Untracked:  data/dosages_IITA_filtered_2021May13.rds
     Untracked:  data/genmap_2021May13.rds
+    Untracked:  data/haps_IITA_2021May13.rds
     Untracked:  data/haps_IITA_filtered_2021May13.rds
     Untracked:  data/recombFreqMat_1minus2c_2021May13.rds
     Untracked:  fig2.png
     Untracked:  fig3.png
     Untracked:  figure/
+    Untracked:  output/Cassava_HMII_V3_Marning_imputation_6-18-21.samples
     Untracked:  output/IITA_CleanedTrialData_2021May10.rds
     Untracked:  output/IITA_ExptDesignsDetected_2021May10.rds
     Untracked:  output/IITA_blupsForModelTraining_twostage_asreml_2021May10.rds
     Untracked:  output/IITA_trials_NOT_identifiable.csv
+    Untracked:  output/alphaAssignOutput_iita_pedigree.txt.dams
+    Untracked:  output/alphaAssignOutput_iita_pedigree.txt.dams.full
+    Untracked:  output/alphaAssignOutput_iita_pedigree.txt.pedigree
+    Untracked:  output/alphaAssignOutput_iita_pedigree.txt.pedigree.top
+    Untracked:  output/alphaAssignOutput_iita_pedigree.txt.sires
+    Untracked:  output/alphaAssignOutput_iita_pedigree.txt.sires.full
     Untracked:  output/crossValPredsA.rds
     Untracked:  output/crossValPredsAD.rds
+    Untracked:  output/cvAD_1rep_markerEffects.rds
+    Untracked:  output/cvAD_1rep_meanPredAccuracy.rds
+    Untracked:  output/cvAD_1rep_parentfolds.rds
+    Untracked:  output/cvAD_1rep_predAccuracy.rds
+    Untracked:  output/cvAD_1rep_predMeans.rds
+    Untracked:  output/cvAD_1rep_predVars.rds
+    Untracked:  output/cvAD_1rep_varPredAccuracy.rds
     Untracked:  output/cvAD_5rep5fold_markerEffects.rds
     Untracked:  output/cvAD_5rep5fold_meanPredAccuracy.rds
     Untracked:  output/cvAD_5rep5fold_parentfolds.rds
@@ -678,10 +693,17 @@ Untracked files:
     Untracked:  output/cvPredMeansAD.rds
     Untracked:  output/cvVarPredAccuracyA.rds
     Untracked:  output/cvVarPredAccuracyAD.rds
+    Untracked:  output/genomicMatePredictions_top121parents_ModelAD.csv
+    Untracked:  output/genomicMatePredictions_top121parents_ModelAD.rds
+    Untracked:  output/genomicMatePredictions_top121parents_ModelDirDom.csv
+    Untracked:  output/genomicMatePredictions_top121parents_ModelDirDom.rds
+    Untracked:  output/genomicPredictions_ModelAD.csv
     Untracked:  output/genomicPredictions_ModelAD.rds
+    Untracked:  output/genomicPredictions_ModelDirDom.csv
     Untracked:  output/genomicPredictions_ModelDirDom.rds
     Untracked:  output/kinship_A_IITA_2021May13.rds
     Untracked:  output/kinship_D_IITA_2021May13.rds
+    Untracked:  output/kinship_domGenotypic_IITA_2021July5.rds
     Untracked:  output/markEffsTest.rds
     Untracked:  output/markerEffects.rds
     Untracked:  output/markerEffectsA.rds
@@ -704,6 +726,15 @@ Untracked files:
     Untracked:  output/samples2keep_IITA_MAFpt01_prune50_25_pt98.nosex
     Untracked:  output/samples2keep_IITA_MAFpt01_prune50_25_pt98.prune.in
     Untracked:  output/samples2keep_IITA_MAFpt01_prune50_25_pt98.prune.out
+    Untracked:  output/samples2keep_notInPHGdb.txt
+    Untracked:  output/test_cvAD_markerEffects.rds
+    Untracked:  output/test_cvAD_meanPredAccuracy.rds
+    Untracked:  output/test_cvAD_parentfolds.rds
+    Untracked:  output/test_cvAD_predAccuracy.rds
+    Untracked:  output/test_cvAD_predMeans.rds
+    Untracked:  output/test_cvAD_predVars.rds
+    Untracked:  output/test_cvAD_varPredAccuracy.rds
+    Untracked:  output/top50crosses.csv
     Untracked:  output/verified_ped.txt
 
 </code></pre>
@@ -743,6 +774,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/wolfemd/implementGMSinCassava/blob/f7af63a604bb4ff7b307f636bb7229390df7aacc/analysis/05-CrossValidation.Rmd" target="_blank">f7af63a</a>
+</td>
+<td>
+wolfemd
+</td>
+<td>
+2021-07-26
+</td>
+<td>
+Link to and add placeholders for extraction of a VCF from PHG DB and subsequent prepaation of inputs for subsequent analyses.
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/wolfemd/implementGMSinCassava/934141c48eff754aa674925be5357d0a2b8be7d3/docs/05-CrossValidation.html" target="_blank">934141c</a>
+</td>
+<td>
+wolfemd
+</td>
+<td>
+2021-07-14
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 html
@@ -1027,6 +1092,10 @@ Cross-validation code IN PROGRESS. Currently working on computeVarPredAccuracy.
 <ol start="4" style="list-style-type: decimal">
 <li><a href="04-PreprocessDataFiles.html">Preprocess data files</a>: Prepare haplotype and dosage matrices, pedigree and BLUPs, genetic map <em>and</em> recombination frequency matrix, for use in predictions.</li>
 </ol>
+<p>Also:</p>
+<ol start="5" style="list-style-type: decimal">
+<li><a href="08-PHGfiles.html">Extract and process PHG files</a>: Extract a VCF file from the PHG <code>*.db</code> file produced by Evan Long. Subsequently, prepare haplotype and dosage matrices, genetic map <em>and</em> recombination frequency matrix, for use in predictions.</li>
+</ol>
 </div>
 <div id="automating-cross-validation" class="section level1">
 <h1>Automating cross-validation</h1>
@@ -1215,6 +1284,9 @@ Cross-validation code IN PROGRESS. Currently working on computeVarPredAccuracy.
 <span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="co"># [1] &quot;Accuracies predicted. Took  19.73242 hrs total.Goodbye!&quot;</span></span>
 <span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="co"># &gt; saveRDS(cvAD_5rep5fold,here::here(&quot;output&quot;,&quot;cvAD_5rep5fold_predAccuracy.rds&quot;))</span></span></code></pre></div>
 </div>
+</div>
+<div id="to-do-phg-parent-wise-cross-validation" class="section level1">
+<h1>[TO DO] PHG parent-wise cross-validation</h1>
 </div>
 <div id="to-do-standard-clone-wise-cross-validation" class="section level1">
 <h1>[TO DO] Standard clone-wise cross-validation</h1>

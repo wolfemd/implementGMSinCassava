@@ -11,7 +11,7 @@
 
 
 
-<title>Implementation Tests for Genomic Mate Selection in Cassava</title>
+<title>Integrating genomic mate selection into the NextGen Cassava pipeline</title>
 
 <script src="site_libs/header-attrs-2.9/header-attrs.js"></script>
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
@@ -263,6 +263,9 @@ $(document).ready(function () {
     <li>
       <a href="04-PreprocessDataFiles.html">Preprocessing input data</a>
     </li>
+    <li>
+      <a href="08-PHGfiles.html">Preprocess PHG files</a>
+    </li>
   </ul>
 </li>
 <li>
@@ -307,7 +310,7 @@ $(document).ready(function () {
 
 
 
-<h1 class="title toc-ignore">Implementation Tests for Genomic Mate Selection in Cassava</h1>
+<h1 class="title toc-ignore">Integrating genomic mate selection into the NextGen Cassava pipeline</h1>
 
 </div>
 
@@ -332,7 +335,7 @@ $(document).ready(function () {
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2021-07-14
+<strong>Last updated:</strong> 2021-07-29
 </p>
 <p>
 <strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 2 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 0
@@ -363,16 +366,16 @@ This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomwolfemdimplementGMSinCassavatree2953ee69dd0359ef4248148f5cfe318ffa6078e8targetblank2953ee6a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/wolfemd/implementGMSinCassava/tree/2953ee69dd0359ef4248148f5cfe318ffa6078e8" target="_blank">2953ee6</a> </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomwolfemdimplementGMSinCassavatreebc85a7d8a05ad57547715fd8d727fb1e9b7261aetargetblankbc85a7da"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/wolfemd/implementGMSinCassava/tree/bc85a7d8a05ad57547715fd8d727fb1e9b7261ae" target="_blank">bc85a7d</a> </a>
 </p>
 </div>
-<div id="strongRepositoryversionstrongahrefhttpsgithubcomwolfemdimplementGMSinCassavatree2953ee69dd0359ef4248148f5cfe318ffa6078e8targetblank2953ee6a" class="panel-collapse collapse">
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomwolfemdimplementGMSinCassavatreebc85a7d8a05ad57547715fd8d727fb1e9b7261aetargetblankbc85a7da" class="panel-collapse collapse">
 <div class="panel-body">
 <p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility.
 </p>
 <p>
-The results in this page were generated with repository version <a href="https://github.com/wolfemd/implementGMSinCassava/tree/2953ee69dd0359ef4248148f5cfe318ffa6078e8" target="_blank">2953ee6</a>. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
+The results in this page were generated with repository version <a href="https://github.com/wolfemd/implementGMSinCassava/tree/bc85a7d8a05ad57547715fd8d727fb1e9b7261ae" target="_blank">bc85a7d</a>. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
 </p>
 <p>
 Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
@@ -382,6 +385,7 @@ Ignored files:
     Ignored:    .DS_Store
     Ignored:    .Rhistory
     Ignored:    .Rproj.user/
+    Ignored:    analysis/.DS_Store
     Ignored:    analysis/accuracies.png
     Ignored:    analysis/fig2.png
     Ignored:    analysis/fig3.png
@@ -393,36 +397,47 @@ Untracked files:
     Untracked:  accuracies.png
     Untracked:  analysis/docs/
     Untracked:  analysis/speedUpPredCrossVar.Rmd
-    Untracked:  code/AlphaAssign-Python/
-    Untracked:  code/calcGameticLD.cpp
-    Untracked:  code/col_sums.cpp
-    Untracked:  code/convertDart2vcf.R
-    Untracked:  code/helloworld.cpp
-    Untracked:  code/imputationFunctions.R
-    Untracked:  code/matmult.cpp
-    Untracked:  code/misc.cpp
-    Untracked:  code/test.cpp
-    Untracked:  data/CassavaGeneticMap/
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.bed
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.bim
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.fam
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.hap.gz
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.log
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.nosex
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.sample
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.vcf.gz
     Untracked:  data/DatabaseDownload_2021May04/
-    Untracked:  data/GBSdataMasterList_31818.csv
-    Untracked:  data/IITA_GBStoPhenoMaster_33018.csv
-    Untracked:  data/NRCRI_GBStoPhenoMaster_40318.csv
-    Untracked:  data/PedigreeGeneticGainCycleTime_aafolabi_01122020.xls
     Untracked:  data/blups_forCrossVal.rds
-    Untracked:  data/chr1_RefPanelAndGSprogeny_ReadyForGP_72719.fam
+    Untracked:  data/config.txt
+    Untracked:  data/config_mw.txt
+    Untracked:  data/dosages_IITA_2021May13.rds
     Untracked:  data/dosages_IITA_filtered_2021May13.rds
     Untracked:  data/genmap_2021May13.rds
+    Untracked:  data/haps_IITA_2021May13.rds
     Untracked:  data/haps_IITA_filtered_2021May13.rds
     Untracked:  data/recombFreqMat_1minus2c_2021May13.rds
     Untracked:  fig2.png
     Untracked:  fig3.png
     Untracked:  figure/
+    Untracked:  output/Cassava_HMII_V3_Marning_imputation_6-18-21.samples
     Untracked:  output/IITA_CleanedTrialData_2021May10.rds
     Untracked:  output/IITA_ExptDesignsDetected_2021May10.rds
     Untracked:  output/IITA_blupsForModelTraining_twostage_asreml_2021May10.rds
     Untracked:  output/IITA_trials_NOT_identifiable.csv
+    Untracked:  output/alphaAssignOutput_iita_pedigree.txt.dams
+    Untracked:  output/alphaAssignOutput_iita_pedigree.txt.dams.full
+    Untracked:  output/alphaAssignOutput_iita_pedigree.txt.pedigree
+    Untracked:  output/alphaAssignOutput_iita_pedigree.txt.pedigree.top
+    Untracked:  output/alphaAssignOutput_iita_pedigree.txt.sires
+    Untracked:  output/alphaAssignOutput_iita_pedigree.txt.sires.full
     Untracked:  output/crossValPredsA.rds
     Untracked:  output/crossValPredsAD.rds
+    Untracked:  output/cvAD_1rep_markerEffects.rds
+    Untracked:  output/cvAD_1rep_meanPredAccuracy.rds
+    Untracked:  output/cvAD_1rep_parentfolds.rds
+    Untracked:  output/cvAD_1rep_predAccuracy.rds
+    Untracked:  output/cvAD_1rep_predMeans.rds
+    Untracked:  output/cvAD_1rep_predVars.rds
+    Untracked:  output/cvAD_1rep_varPredAccuracy.rds
     Untracked:  output/cvAD_5rep5fold_markerEffects.rds
     Untracked:  output/cvAD_5rep5fold_meanPredAccuracy.rds
     Untracked:  output/cvAD_5rep5fold_parentfolds.rds
@@ -441,10 +456,17 @@ Untracked files:
     Untracked:  output/cvPredMeansAD.rds
     Untracked:  output/cvVarPredAccuracyA.rds
     Untracked:  output/cvVarPredAccuracyAD.rds
+    Untracked:  output/genomicMatePredictions_top121parents_ModelAD.csv
+    Untracked:  output/genomicMatePredictions_top121parents_ModelAD.rds
+    Untracked:  output/genomicMatePredictions_top121parents_ModelDirDom.csv
+    Untracked:  output/genomicMatePredictions_top121parents_ModelDirDom.rds
+    Untracked:  output/genomicPredictions_ModelAD.csv
     Untracked:  output/genomicPredictions_ModelAD.rds
+    Untracked:  output/genomicPredictions_ModelDirDom.csv
     Untracked:  output/genomicPredictions_ModelDirDom.rds
     Untracked:  output/kinship_A_IITA_2021May13.rds
     Untracked:  output/kinship_D_IITA_2021May13.rds
+    Untracked:  output/kinship_domGenotypic_IITA_2021July5.rds
     Untracked:  output/markEffsTest.rds
     Untracked:  output/markerEffects.rds
     Untracked:  output/markerEffectsA.rds
@@ -467,6 +489,15 @@ Untracked files:
     Untracked:  output/samples2keep_IITA_MAFpt01_prune50_25_pt98.nosex
     Untracked:  output/samples2keep_IITA_MAFpt01_prune50_25_pt98.prune.in
     Untracked:  output/samples2keep_IITA_MAFpt01_prune50_25_pt98.prune.out
+    Untracked:  output/samples2keep_notInPHGdb.txt
+    Untracked:  output/test_cvAD_markerEffects.rds
+    Untracked:  output/test_cvAD_meanPredAccuracy.rds
+    Untracked:  output/test_cvAD_parentfolds.rds
+    Untracked:  output/test_cvAD_predAccuracy.rds
+    Untracked:  output/test_cvAD_predMeans.rds
+    Untracked:  output/test_cvAD_predVars.rds
+    Untracked:  output/test_cvAD_varPredAccuracy.rds
+    Untracked:  output/top50crosses.csv
     Untracked:  output/verified_ped.txt
 
 </code></pre>
@@ -506,6 +537,57 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/wolfemd/implementGMSinCassava/blob/e176b819b7f370f1b607655daf6357df711d4117/analysis/index.Rmd" target="_blank">e176b81</a>
+</td>
+<td>
+wolfemd
+</td>
+<td>
+2021-07-29
+</td>
+<td>
+Update the project landing page to reflect the near-final state of things. Ready to publish.
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/wolfemd/implementGMSinCassava/blob/f8f8a28441247642f057e080daeaea675d8aa8e7/analysis/index.Rmd" target="_blank">f8f8a28</a>
+</td>
+<td>
+wolfemd
+</td>
+<td>
+2021-07-26
+</td>
+<td>
+Update analysis-to-do list. Add placeholders and links about PHG-vs-Beagle comparisons to-come.
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/wolfemd/implementGMSinCassava/934141c48eff754aa674925be5357d0a2b8be7d3/docs/index.html" target="_blank">934141c</a>
+</td>
+<td>
+wolfemd
+</td>
+<td>
+2021-07-14
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 html
@@ -649,16 +731,25 @@ Start workflowr project.
 </div>
 </div>
 </div>
-<p>Available data and software make it hypothetically possible to predict cross variances (mendelian sampling variance) and use it to select mates, <em>e.g.</em> using the usefuleness criterion (UC).</p>
-<p>New information also adds new sources of uncertainty:</p>
-<ul>
-<li>Phasing error</li>
-<li>Use of a (or various) genetic map(s) to predict recombination frequencies</li>
-<li>Inherent uncertainty in marker effects and their effect on variance prediction</li>
-</ul>
-<p>We used cross-validation to estimate the accuracy of predicting means, variances and the usefulness of crosses on selection indices. That analysis leveraged a high-quality validated pedigree-based phasing pipeline. That pipeline is considerably more involved and may not be implementable on the entire breeding germplasm.</p>
-<p>Here I test cross-variance prediction in our current breeding pipeline’s available data. We will assess the whether and how to start using cross variance predictions in practice.</p>
+<p>We saw in <a href="https://www.biorxiv.org/content/10.1101/2021.01.05.425443v1">an initial study</a>, promising results regarding the prediction of genetic variance in cassava crosses. In that study, we used a high-quality validated pedigree-based phasing pipeline for the marker data. That pipeline is considerably more involved and may not be implementable on the entire breeding germplasm.</p>
+<p>In this project, I am integrating cross-variance predictions into our current genomics-enabled breeding pipeline leveraging available data. I conduct additional tests to assess whether current Beagle imputed-and-phased data and a basic pedigree-validation step are sufficient.</p>
+<p>This project should form the template for genomic mate selection in NextGen Cassava.</p>
 <p><a href="07-Results.html"><strong>See the Results here!</strong></a></p>
+<p>We will soon implement in <a href="https://wolfemd.github.io/IITA_2021GS/">summer 2021 for planning fall crossing nurseries and with new GS C5 DArTseqLD data</a>.</p>
+<div id="whats-new" class="section level1">
+<h1>What’s new?</h1>
+<ol style="list-style-type: decimal">
+<li><p>Functions previously used in NextGen GS pipeline (<code>code/gsFunctions.R</code>) migrate to and receive an upgrade (<code>code/gmsFunctions.R</code>) to support genomic mate selection. The <code>runGenomicPredictions()</code> function fits genomic mixed-models and produces GEBV/GETGV for existing germplasm as it did previously, but now also returns marker effects and provides a direct input to the new <code>predictCrosses()</code> function, which handles predicting mate selection criteria.</p></li>
+<li><p>Support for a directional dominance model to incorporate genome-wide homozygosity-effects (inbreeding) into predictions.</p></li>
+<li><p>Support for selection indices.</p></li>
+<li><p>Improved version of <strong>predCrossVar</strong> functions at <code>code/predCrossVar.R</code></p>
+<ul>
+<li>eventually to be integrated into the R package</li>
+<li>faster unless you want to use the Bayesian approach.</li>
+</ul></li>
+<li><p>Creation of a single-function interface to accomplish parent-wise cross-validation at <code>code/parentWiseCrossVal.R</code>. Provides estimates of (selection index) accuracy predicting family means and variances.</p></li>
+</ol>
+</div>
 <div id="analysis-steps" class="section level1">
 <h1>Analysis steps</h1>
 <ol style="list-style-type: decimal">
@@ -669,13 +760,16 @@ Start workflowr project.
 </ul></li>
 <li><p><a href="02-GetBLUPs.html">Get BLUPs combining all trial data</a>: Combine data from all trait-trials to get BLUPs for downstream genomic prediction. Fit mixed-model to multi-trial dataset and extract BLUPs, de-regressed BLUPs and weights. Include two rounds of outlier removal.</p></li>
 <li><p><a href="03-validatePedigree.html">Validate the pedigree obtained from cassavabase</a>: Before setting up a cross-validation scheme for predictions that depend on a correct pedigree, add a basic verification step to the pipeline. Not trying to fill unknown relationships or otherwise correct the pedigree. Assess evidence that relationship is correct, remove if incorrect.</p></li>
-<li><p><a href="04-PreprocessDataFiles.html">Preprocess data files</a>: Prepare haplotype and dosage matrices, pedigree and BLUPs, genetic map <em>and</em> recombination frequency matrix, for use in predictions.</p></li>
+<li><p><a href="04-PreprocessDataFiles.html">Preprocess data files</a>: Prepare haplotype and dosage matrices, GRMs, pedigree and BLUPs, genetic map <em>and</em> recombination frequency matrix, for use in predictions.</p></li>
+<li><p><a href="08-PHGfiles.html">Extract and process PHG files</a>: Extract a VCF file from the PHG <code>*.db</code> file produced by Evan Long. Subsequently, prepare haplotype and dosage matrices, GRMs, genetic map <em>and</em> recombination frequency matrix, for use in predictions.</p></li>
 <li><p><a href="05-CrossValidation.html">Parent-wise and standard cross-validation</a>:</p>
 <ul>
 <li>Compute parent-wise cross-validation folds using the validated pedigree. Fit models to get marker effects and make subsequent predictions of cross means and (co)variances.</li>
 <li><strong>Models “AD”</strong> (classic BV+DD partition of additive+dominance) and <strong>“DirDom”</strong> (genotypic add+dom partition with genome-wide homozygosity effect).</li>
 <li>Include use of selection index weights to compute index accuracy.</li>
 <li>Include new models and index predictions in standard fold cross-validation in addition to the parent-wise scheme / function.</li>
+<li><input type="checkbox" disabled="" />
+<strong><em>[Coming soon]</em></strong> Run cross-validation using both Beagle- vs. PHG-imputed and phased marker data to compare their quality.</li>
 </ul></li>
 <li><p><a href="06-GenomicPredictions.html">Genomic predictions</a>:</p>
 <ul>
@@ -691,9 +785,9 @@ Start workflowr project.
 </div>
 <div id="data-and-code-repository-access" class="section level1">
 <h1>Data and code repository access</h1>
-<p><a href="ftp://ftp.cassavabase.org/marnin_datasets/implementGMSinCassava/output/"><strong>FULL REPOSITORY DOWNLOAD FROM CASSAVABASE FTP SERVER</strong></a></p>
+<p><a href="ftp://ftp.cassavabase.org/marnin_datasets/implementGMSinCassava/">CLICK HERE FOR ACCESS TO THE FULL REPOSITORY</a> (select “Guest” credentials when prompted by the Cassavabase FTP server)</p>
 <p>or</p>
-<p><a href="https://github.com/wolfemd/implementGMSinCassava/tree/master/output"><strong>DOWNLOAD FROM GitHub</strong></a><strong>*</strong></p>
+<p><a href="https://github.com/wolfemd/implementGMSinCassava/"><strong>DOWNLOAD FROM GitHub*</strong></a></p>
 <p>*GitHub only hosts files max 50 Mb.</p>
 </div>
 <div id="guide-to-key-directories-and-file-names" class="section level1">
@@ -705,31 +799,41 @@ Start workflowr project.
 <li><code>docs/</code>: compiled <strong>.html</strong>, “knitted” from <strong>.Rmd</strong></li>
 <li><code>code/</code>: supporting functions sourced in <code>analysis/*.Rmd</code>’s.</li>
 </ol>
-<p><strong>FILES OF INTEREST</strong>: everything is in the <code>output/</code> sub-directory.</p>
+<p><strong>FILES OF INTEREST</strong>: everything is in the <code>output/</code> sub-directory (<a href="ftp://ftp.cassavabase.org/marnin_datasets/implementGMSinCassava/output/">click here</a> and select “Guest” credentials when prompted by the Cassavabase FTP server).</p>
 <ul>
-<li><strong>GEBVs for parent selection:</strong> ``</li>
-<li><strong>GETGVs for variety advancement:</strong> ``</li>
-<li>Kinship matrices, dosages, haplotype matrix, recombination frequency matrix, genetic map files</li>
+<li><p><strong>GEBVs for parent selection and GETGVs for variety advancement:</strong></p>
+<ul>
+<li><p><a href="ftp://ftp.cassavabase.org/marnin_datasets/implementGMSinCassava/output/genomicPredictions_ModelDirDom.csv">download DirDom model genomic predictions</a></p></li>
+<li><p><a href="ftp://ftp.cassavabase.org/marnin_datasets/implementGMSinCassava/output/genomicPredictions_ModelAD.csv">download AD model genomic predictions</a></p></li>
+</ul></li>
+<li><p><strong>Predicted means, variances and usefulness of crosses among top parents:</strong></p>
+<ul>
+<li><p><a href="ftp://ftp.cassavabase.org/marnin_datasets/implementGMSinCassava/output/genomicMatePredictions_top121parents_ModelDirDom.csv">download DirDom model genomic mate predictions</a></p></li>
+<li><p><a href="ftp://ftp.cassavabase.org/marnin_datasets/implementGMSinCassava/output/genomicMatePredictions_top121parents_ModelAD.csv">download AD model genomic mate predictions</a></p></li>
+</ul></li>
+<li><p>Kinship matrices, dosages, haplotype matrix, recombination frequency matrix, genetic map files</p></li>
 </ul>
+<p>genomicPredictions_ModelDirDom.csv genomicMatePredictions_top121parents_ModelDirDom.csv genomicPredictions_ModelAD.csv genomicMatePredictions_top121parents_ModelAD.csv</p>
 </div>
 <div id="analyses-to-do" class="section level1">
 <h1>Analyses To Do</h1>
-<p><strong>Additional future analyses to do:</strong></p>
 <ol style="list-style-type: decimal">
-<li>PHG imputed and phased marker data</li>
-<li>AWC’s genetic map</li>
-<li>Multi-trait and/or Bayesian models</li>
-<li>Other efforts to improve variance prediction accuracy?</li>
-<li>Simulation to explore factors impacting estimate of accuracy</li>
-</ol>
+<li><p><strong>[In Progress]</strong> PHG imputed and phased marker data</p></li>
+<li><p>Cross-variance prediction is slow, but significant speed gains can be made by using fewer markers for the predictions. Examine the speed benefit vs. accuracy cost trade-off.</p></li>
+<li><p>Improve mate selection accuracy by…</p>
 <ul>
-<li><p>Impact of phasing switch errors</p>
+<li>Choice of genetic map? AWC’s map? Sex specific maps?</li>
+<li>Multi-trait REML models, single-step, heterogeneous error and/or of the other usual possibilities,</li>
+<li>and/or a return to the compute intense Bayesian posterior distribution approach used in the MS… might be more attractive with fewer markers to make compute faster</li>
+</ul></li>
+<li><p>Simulation to explore factors impacting estimate of accuracy</p>
 <ul>
+<li>Impact of phasing switch errors</li>
 <li>Quality and quantity of data available on parents</li>
 <li>Relatedness of parents</li>
 <li>What is the relationship between the true accuracy and estimate of accuracy?</li>
 </ul></li>
-</ul>
+</ol>
 </div>
 
 

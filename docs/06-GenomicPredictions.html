@@ -438,6 +438,9 @@ div.tocify {
     <li>
       <a href="04-PreprocessDataFiles.html">Preprocessing input data</a>
     </li>
+    <li>
+      <a href="08-PHGfiles.html">Preprocess PHG files</a>
+    </li>
   </ul>
 </li>
 <li>
@@ -509,7 +512,7 @@ div.tocify {
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2021-07-14
+<strong>Last updated:</strong> 2021-07-29
 </p>
 <p>
 <strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 7 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 0
@@ -600,16 +603,16 @@ This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomwolfemdimplementGMSinCassavatree2953ee69dd0359ef4248148f5cfe318ffa6078e8targetblank2953ee6a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/wolfemd/implementGMSinCassava/tree/2953ee69dd0359ef4248148f5cfe318ffa6078e8" target="_blank">2953ee6</a> </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomwolfemdimplementGMSinCassavatreebc85a7d8a05ad57547715fd8d727fb1e9b7261aetargetblankbc85a7da"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/wolfemd/implementGMSinCassava/tree/bc85a7d8a05ad57547715fd8d727fb1e9b7261ae" target="_blank">bc85a7d</a> </a>
 </p>
 </div>
-<div id="strongRepositoryversionstrongahrefhttpsgithubcomwolfemdimplementGMSinCassavatree2953ee69dd0359ef4248148f5cfe318ffa6078e8targetblank2953ee6a" class="panel-collapse collapse">
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomwolfemdimplementGMSinCassavatreebc85a7d8a05ad57547715fd8d727fb1e9b7261aetargetblankbc85a7da" class="panel-collapse collapse">
 <div class="panel-body">
 <p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility.
 </p>
 <p>
-The results in this page were generated with repository version <a href="https://github.com/wolfemd/implementGMSinCassava/tree/2953ee69dd0359ef4248148f5cfe318ffa6078e8" target="_blank">2953ee6</a>. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
+The results in this page were generated with repository version <a href="https://github.com/wolfemd/implementGMSinCassava/tree/bc85a7d8a05ad57547715fd8d727fb1e9b7261ae" target="_blank">bc85a7d</a>. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
 </p>
 <p>
 Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
@@ -619,6 +622,7 @@ Ignored files:
     Ignored:    .DS_Store
     Ignored:    .Rhistory
     Ignored:    .Rproj.user/
+    Ignored:    analysis/.DS_Store
     Ignored:    analysis/accuracies.png
     Ignored:    analysis/fig2.png
     Ignored:    analysis/fig3.png
@@ -630,36 +634,47 @@ Untracked files:
     Untracked:  accuracies.png
     Untracked:  analysis/docs/
     Untracked:  analysis/speedUpPredCrossVar.Rmd
-    Untracked:  code/AlphaAssign-Python/
-    Untracked:  code/calcGameticLD.cpp
-    Untracked:  code/col_sums.cpp
-    Untracked:  code/convertDart2vcf.R
-    Untracked:  code/helloworld.cpp
-    Untracked:  code/imputationFunctions.R
-    Untracked:  code/matmult.cpp
-    Untracked:  code/misc.cpp
-    Untracked:  code/test.cpp
-    Untracked:  data/CassavaGeneticMap/
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.bed
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.bim
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.fam
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.hap.gz
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.log
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.nosex
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.sample
+    Untracked:  data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719.vcf.gz
     Untracked:  data/DatabaseDownload_2021May04/
-    Untracked:  data/GBSdataMasterList_31818.csv
-    Untracked:  data/IITA_GBStoPhenoMaster_33018.csv
-    Untracked:  data/NRCRI_GBStoPhenoMaster_40318.csv
-    Untracked:  data/PedigreeGeneticGainCycleTime_aafolabi_01122020.xls
     Untracked:  data/blups_forCrossVal.rds
-    Untracked:  data/chr1_RefPanelAndGSprogeny_ReadyForGP_72719.fam
+    Untracked:  data/config.txt
+    Untracked:  data/config_mw.txt
+    Untracked:  data/dosages_IITA_2021May13.rds
     Untracked:  data/dosages_IITA_filtered_2021May13.rds
     Untracked:  data/genmap_2021May13.rds
+    Untracked:  data/haps_IITA_2021May13.rds
     Untracked:  data/haps_IITA_filtered_2021May13.rds
     Untracked:  data/recombFreqMat_1minus2c_2021May13.rds
     Untracked:  fig2.png
     Untracked:  fig3.png
     Untracked:  figure/
+    Untracked:  output/Cassava_HMII_V3_Marning_imputation_6-18-21.samples
     Untracked:  output/IITA_CleanedTrialData_2021May10.rds
     Untracked:  output/IITA_ExptDesignsDetected_2021May10.rds
     Untracked:  output/IITA_blupsForModelTraining_twostage_asreml_2021May10.rds
     Untracked:  output/IITA_trials_NOT_identifiable.csv
+    Untracked:  output/alphaAssignOutput_iita_pedigree.txt.dams
+    Untracked:  output/alphaAssignOutput_iita_pedigree.txt.dams.full
+    Untracked:  output/alphaAssignOutput_iita_pedigree.txt.pedigree
+    Untracked:  output/alphaAssignOutput_iita_pedigree.txt.pedigree.top
+    Untracked:  output/alphaAssignOutput_iita_pedigree.txt.sires
+    Untracked:  output/alphaAssignOutput_iita_pedigree.txt.sires.full
     Untracked:  output/crossValPredsA.rds
     Untracked:  output/crossValPredsAD.rds
+    Untracked:  output/cvAD_1rep_markerEffects.rds
+    Untracked:  output/cvAD_1rep_meanPredAccuracy.rds
+    Untracked:  output/cvAD_1rep_parentfolds.rds
+    Untracked:  output/cvAD_1rep_predAccuracy.rds
+    Untracked:  output/cvAD_1rep_predMeans.rds
+    Untracked:  output/cvAD_1rep_predVars.rds
+    Untracked:  output/cvAD_1rep_varPredAccuracy.rds
     Untracked:  output/cvAD_5rep5fold_markerEffects.rds
     Untracked:  output/cvAD_5rep5fold_meanPredAccuracy.rds
     Untracked:  output/cvAD_5rep5fold_parentfolds.rds
@@ -678,10 +693,17 @@ Untracked files:
     Untracked:  output/cvPredMeansAD.rds
     Untracked:  output/cvVarPredAccuracyA.rds
     Untracked:  output/cvVarPredAccuracyAD.rds
+    Untracked:  output/genomicMatePredictions_top121parents_ModelAD.csv
+    Untracked:  output/genomicMatePredictions_top121parents_ModelAD.rds
+    Untracked:  output/genomicMatePredictions_top121parents_ModelDirDom.csv
+    Untracked:  output/genomicMatePredictions_top121parents_ModelDirDom.rds
+    Untracked:  output/genomicPredictions_ModelAD.csv
     Untracked:  output/genomicPredictions_ModelAD.rds
+    Untracked:  output/genomicPredictions_ModelDirDom.csv
     Untracked:  output/genomicPredictions_ModelDirDom.rds
     Untracked:  output/kinship_A_IITA_2021May13.rds
     Untracked:  output/kinship_D_IITA_2021May13.rds
+    Untracked:  output/kinship_domGenotypic_IITA_2021July5.rds
     Untracked:  output/markEffsTest.rds
     Untracked:  output/markerEffects.rds
     Untracked:  output/markerEffectsA.rds
@@ -704,6 +726,15 @@ Untracked files:
     Untracked:  output/samples2keep_IITA_MAFpt01_prune50_25_pt98.nosex
     Untracked:  output/samples2keep_IITA_MAFpt01_prune50_25_pt98.prune.in
     Untracked:  output/samples2keep_IITA_MAFpt01_prune50_25_pt98.prune.out
+    Untracked:  output/samples2keep_notInPHGdb.txt
+    Untracked:  output/test_cvAD_markerEffects.rds
+    Untracked:  output/test_cvAD_meanPredAccuracy.rds
+    Untracked:  output/test_cvAD_parentfolds.rds
+    Untracked:  output/test_cvAD_predAccuracy.rds
+    Untracked:  output/test_cvAD_predMeans.rds
+    Untracked:  output/test_cvAD_predVars.rds
+    Untracked:  output/test_cvAD_varPredAccuracy.rds
+    Untracked:  output/top50crosses.csv
     Untracked:  output/verified_ped.txt
 
 </code></pre>
@@ -743,6 +774,74 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/wolfemd/implementGMSinCassava/blob/c843dbdff32876a26af885103817c391c9841edf/analysis/06-GenomicPredictions.Rmd" target="_blank">c843dbd</a>
+</td>
+<td>
+wolfemd
+</td>
+<td>
+2021-07-29
+</td>
+<td>
+Tidy, completed version.
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/wolfemd/implementGMSinCassava/blob/6eb6a62013acdfad61985430f76c57d015005ef5/analysis/06-GenomicPredictions.Rmd" target="_blank">6eb6a62</a>
+</td>
+<td>
+wolfemd
+</td>
+<td>
+2021-07-29
+</td>
+<td>
+Debugging and full benchmark run work shown.
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/wolfemd/implementGMSinCassava/blob/1d017cb48fe22ee9cc976663d199dfaa28100afa/analysis/06-GenomicPredictions.Rmd" target="_blank">1d017cb</a>
+</td>
+<td>
+wolfemd
+</td>
+<td>
+2021-07-25
+</td>
+<td>
+Debugging completed for predictCrosses(). Work shown and tests passed also shown. Full run underway.
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/wolfemd/implementGMSinCassava/934141c48eff754aa674925be5357d0a2b8be7d3/docs/06-GenomicPredictions.html" target="_blank">934141c</a>
+</td>
+<td>
+wolfemd
+</td>
+<td>
+2021-07-14
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 html
@@ -902,12 +1001,12 @@ Full genomic prediction including (1) genomic prediction of clone GBLUPs and (2)
 <div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1) start a screen shell </span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">screen</span><span class="kw">;</span> <span class="co"># or screen -r if re-attaching...</span></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co"># 2) start the singularity Linux shell inside that</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="ex">singularity</span> shell /workdir/<span class="va">$USER</span>/rocker.sif<span class="kw">;</span> </span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Project directory, so R will use as working dir.</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> /home/mw489/implementGMSinCassava/<span class="kw">;</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co"># 3) Start R</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="ex">R</span></span></code></pre></div>
-<p>Load input data</p>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co">#singularity shell /workdir/$USER/rocker.sif; </span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="ex">singularity</span> shell ~/rocker2.sif<span class="kw">;</span> </span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Project directory, so R will use as working dir.</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> /home/mw489/implementGMSinCassava/<span class="kw">;</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co"># 3) Start R</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="ex">R</span></span></code></pre></div>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">require</span>(tidyverse); <span class="fu">require</span>(magrittr); </span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 5 threads per Rsession for matrix math (openblas)</span></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co">#RhpcBLASctl::blas_set_num_threads(5)</span></span>
@@ -982,7 +1081,7 @@ Full genomic prediction including (1) genomic prediction of clone GBLUPs and (2)
 <span id="cb5-72"><a href="#cb5-72" aria-hidden="true" tabindex="-1"></a><span class="fu">nrow</span>(CrossesToPredict)</span>
 <span id="cb5-73"><a href="#cb5-73" aria-hidden="true" tabindex="-1"></a><span class="co"># [1] 7381 </span></span></code></pre></div>
 <p>Run the “AD” and “DirDom” modelTypes.</p>
-<p>cbsulm15 - July 13 - 3:30pm</p>
+<p>cbsulm15 - July 25 - 7:30pm</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>start<span class="ot">&lt;-</span><span class="fu">proc.time</span>()[<span class="dv">3</span>]</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>crossPreds_dirdom<span class="ot">&lt;-</span><span class="fu">predictCrosses</span>(<span class="at">modelType=</span><span class="st">&quot;DirDom&quot;</span>,<span class="at">stdSelInt =</span> <span class="fl">2.67</span>, </span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">selInd=</span><span class="cn">TRUE</span>, <span class="at">SIwts=</span>SIwts,</span>
@@ -990,20 +1089,18 @@ Full genomic prediction including (1) genomic prediction of clone GBLUPs and (2)
 <span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">snpeffs=</span>gpreds_dirdom<span class="sc">$</span>genomicPredOut[[<span class="dv">1</span>]],</span>
 <span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">dosages=</span>dosages,</span>
 <span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">haploMat=</span>haploMat,<span class="at">recombFreqMat=</span>recombFreqMat,</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">ncores=</span><span class="dv">15</span>,<span class="at">nBLASthreads=</span><span class="dv">5</span>)</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">ncores=</span><span class="dv">20</span>,<span class="at">nBLASthreads=</span><span class="dv">5</span>)</span>
 <span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>runtime<span class="ot">&lt;-</span><span class="fu">proc.time</span>()[<span class="dv">3</span>]<span class="sc">-</span>start; runtime<span class="sc">/</span><span class="dv">60</span></span>
 <span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(crossPreds_dirdom,<span class="at">file =</span> here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;output&quot;</span>,<span class="st">&quot;genomicMatePredictions_top121parents_ModelDirDom.rds&quot;</span>))</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Error: Problem with `mutate()` column `predVars`.</span></span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="co"># ℹ `predVars = future_pmap(...)`.</span></span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="co"># ✖ Failed to retrieve the value of MultisessionFuture (&lt;none&gt;) from cluster RichSOCKnode #20 (PID 28094 on ‘localhost’). The reason reported was ‘error reading from connection’</span></span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Run `rlang::last_error()` to see where the error occurred.</span></span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="co"># In addition: Warning message:</span></span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="co"># In list(...) : closing unused connection 3 (localhost)</span></span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="co"># &gt; runtime&lt;-proc.time()[3]-start; runtime/60</span></span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="co">#  elapsed</span></span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="co"># 45.65038</span></span></code></pre></div>
-<p>cbsulm15</p>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="co"># elapsed</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="co">#  2195.6</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="co"># # A tibble: 1 x 2</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="co">#   tidyPreds              rawPreds        </span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="co">#   &lt;list&gt;                 &lt;list&gt;          </span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="co"># 1 &lt;tibble [177,144 × 9]&gt; &lt;named list [2]&gt;</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="co"># 36.6 hrs for 7381 crosses. Or about 5 hours per 1000 crosses</span></span></code></pre></div>
+<p>cbsulm17 - July 25 at 7:30pm</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>start<span class="ot">&lt;-</span><span class="fu">proc.time</span>()[<span class="dv">3</span>]</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>crossPreds_ad<span class="ot">&lt;-</span><span class="fu">predictCrosses</span>(<span class="at">modelType=</span><span class="st">&quot;AD&quot;</span>,<span class="at">stdSelInt =</span> <span class="fl">2.67</span>, </span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>                              <span class="at">selInd=</span><span class="cn">TRUE</span>, <span class="at">SIwts=</span>SIwts,</span>
@@ -1011,103 +1108,147 @@ Full genomic prediction including (1) genomic prediction of clone GBLUPs and (2)
 <span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>                              <span class="at">snpeffs=</span>gpreds_ad<span class="sc">$</span>genomicPredOut[[<span class="dv">1</span>]],</span>
 <span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>                              <span class="at">dosages=</span>dosages,</span>
 <span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>                              <span class="at">haploMat=</span>haploMat,<span class="at">recombFreqMat=</span>recombFreqMat,</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>                              <span class="at">ncores=</span><span class="dv">15</span>,<span class="at">nBLASthreads=</span><span class="dv">5</span>)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>                              <span class="at">ncores=</span><span class="dv">20</span>,<span class="at">nBLASthreads=</span><span class="dv">5</span>)</span>
 <span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>runtime<span class="ot">&lt;-</span><span class="fu">proc.time</span>()[<span class="dv">3</span>]<span class="sc">-</span>start; runtime<span class="sc">/</span><span class="dv">60</span></span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(crossPreds_ad,<span class="at">file =</span> here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;output&quot;</span>,<span class="st">&quot;genomicMatePredictions_top121parents_ModelAD.rds&quot;</span>))</span></code></pre></div>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(crossPreds_ad,<span class="at">file =</span> here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;output&quot;</span>,<span class="st">&quot;genomicMatePredictions_top121parents_ModelAD.rds&quot;</span>))</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="co"># elapsed</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="co"># 1511.56</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="co"># # A tibble: 1 x 2</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="co">#   tidyPreds              rawPreds        </span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="co">#   &lt;list&gt;                 &lt;list&gt;          </span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="co"># 1 &lt;tibble [177,144 × 9]&gt; &lt;named list [2]&gt;</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="co"># 1511.56 or 25.33 hrs for 7381 crosses </span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="co"># About 3.4 hrs per 1000 crosses?</span></span></code></pre></div>
 </div>
-<div id="to-do-write-predictions-to-disk" class="section level1">
-<h1>[TO DO] Write predictions to disk</h1>
+<div id="write-tidy-breeder-friendly-predictions-to-disk" class="section level1">
+<h1>Write tidy breeder-friendly predictions to disk</h1>
 <p>Add genetic groups and tidy format</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># unique_gids&lt;-predModelA %&gt;%</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co">#   dplyr::select(genomicPredOut) %&gt;%</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co">#   unnest(genomicPredOut) %&gt;%</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co">#   select(-varcomps) %&gt;%</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="co">#   unnest(gblups) %$%</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co">#   GID %&gt;%</span></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="co">#   unique</span></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="co"># c1a&lt;-unique_gids %&gt;%</span></span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="co">#   grep(&quot;c1a&quot;,.,value = T,ignore.case = T) %&gt;%</span></span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="co">#   union(.,unique_gids %&gt;%</span></span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="co">#           grep(&quot;^F&quot;,.,value = T,ignore.case = T) %&gt;%</span></span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="co">#           grep(&quot;c1b&quot;,.,value = T,ignore.case = T,invert = T))</span></span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="co"># c1b&lt;-unique_gids%&gt;% grep(&quot;c1b&quot;,.,value = T,ignore.case = T)</span></span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="co"># c2a&lt;-unique_gids %&gt;%</span></span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="co">#   grep(&quot;C2a&quot;,.,value = T,ignore.case = T) %&gt;%</span></span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="co">#   grep(&quot;NR17&quot;,.,value = T,ignore.case = T)</span></span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a><span class="co"># c2b&lt;-unique_gids %&gt;%</span></span>
-<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a><span class="co">#   grep(&quot;C2b&quot;,.,value = T,ignore.case = T) %&gt;%</span></span>
-<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a><span class="co">#   .[!. %in% c(c1a,c1b,c2a)]</span></span>
-<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a><span class="co"># c3a&lt;-unique_gids %&gt;%</span></span>
-<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a><span class="co">#   grep(&quot;C3a&quot;,.,value = T,ignore.case = T) %&gt;%</span></span>
-<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a><span class="co">#   .[!. %in% c(c1a,c1b,c2a,c2b)]</span></span>
-<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a><span class="co"># c3b&lt;-unique_gids %&gt;%</span></span>
-<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a><span class="co">#   grep(&quot;NR20C3&quot;,.,value = T,ignore.case = T) %&gt;%</span></span>
-<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a><span class="co">#   .[!. %in% c(c1a,c1b,c2a,c2b,c3a)]</span></span>
-<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a><span class="co"># nrTP&lt;-setdiff(unique_gids,unique(c(c1a,c1b,c2a,c2b,c3a,c3b)))</span></span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse);</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>gpreds_ad<span class="ot">&lt;-</span><span class="fu">readRDS</span>(<span class="at">file =</span> here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;output&quot;</span>,<span class="st">&quot;genomicPredictions_ModelAD.rds&quot;</span>)) </span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>gpreds_ad<span class="sc">$</span>gblups[[<span class="dv">1</span>]] <span class="sc">%&gt;%</span> </span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">GeneticGroup=</span><span class="fu">case_when</span>(<span class="fu">grepl</span>(<span class="st">&quot;2013_|TMS13&quot;</span>,GID)<span class="sc">~</span><span class="st">&quot;C1&quot;</span>,</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>                                <span class="fu">grepl</span>(<span class="st">&quot;TMS14&quot;</span>,GID)<span class="sc">~</span><span class="st">&quot;C2&quot;</span>,</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>                                <span class="fu">grepl</span>(<span class="st">&quot;TMS15&quot;</span>,GID)<span class="sc">~</span><span class="st">&quot;C3&quot;</span>,</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>                                <span class="fu">grepl</span>(<span class="st">&quot;TMS18&quot;</span>,GID)<span class="sc">~</span><span class="st">&quot;C4&quot;</span>,</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>                                <span class="sc">!</span><span class="fu">grepl</span>(<span class="st">&quot;2013_|TMS13|TMS14|TMS15|TMS18&quot;</span>,GID)<span class="sc">~</span><span class="st">&quot;PreGS&quot;</span>),</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>         <span class="at">GeneticGroup=</span><span class="fu">factor</span>(GeneticGroup,<span class="at">levels =</span> <span class="fu">c</span>(<span class="st">&quot;PreGS&quot;</span>,<span class="st">&quot;C1&quot;</span>,<span class="st">&quot;C2&quot;</span>,<span class="st">&quot;C3&quot;</span>,<span class="st">&quot;C4&quot;</span>))) <span class="sc">%&gt;%</span> </span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">relocate</span>(GeneticGroup,<span class="at">.after =</span> <span class="st">&quot;predOf&quot;</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(predOf,<span class="fu">desc</span>(SELIND)) <span class="sc">%&gt;%</span> </span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">write.csv</span>(.,<span class="at">file =</span> here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;output&quot;</span>,<span class="st">&quot;genomicPredictions_ModelAD.csv&quot;</span>),</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>            <span class="at">row.names =</span> F)</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>gpreds_dirdom<span class="ot">&lt;-</span><span class="fu">readRDS</span>(<span class="at">file =</span> here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;output&quot;</span>,<span class="st">&quot;genomicPredictions_ModelDirDom.rds&quot;</span>))</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>gpreds_dirdom<span class="sc">$</span>gblups[[<span class="dv">1</span>]] <span class="sc">%&gt;%</span> </span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">GeneticGroup=</span><span class="fu">case_when</span>(<span class="fu">grepl</span>(<span class="st">&quot;2013_|TMS13&quot;</span>,GID)<span class="sc">~</span><span class="st">&quot;C1&quot;</span>,</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>                                <span class="fu">grepl</span>(<span class="st">&quot;TMS14&quot;</span>,GID)<span class="sc">~</span><span class="st">&quot;C2&quot;</span>,</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>                                <span class="fu">grepl</span>(<span class="st">&quot;TMS15&quot;</span>,GID)<span class="sc">~</span><span class="st">&quot;C3&quot;</span>,</span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>                                <span class="fu">grepl</span>(<span class="st">&quot;TMS18&quot;</span>,GID)<span class="sc">~</span><span class="st">&quot;C4&quot;</span>,</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>                                <span class="sc">!</span><span class="fu">grepl</span>(<span class="st">&quot;2013_|TMS13|TMS14|TMS15|TMS18&quot;</span>,GID)<span class="sc">~</span><span class="st">&quot;PreGS&quot;</span>),</span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>         <span class="at">GeneticGroup=</span><span class="fu">factor</span>(GeneticGroup,<span class="at">levels =</span> <span class="fu">c</span>(<span class="st">&quot;PreGS&quot;</span>,<span class="st">&quot;C1&quot;</span>,<span class="st">&quot;C2&quot;</span>,<span class="st">&quot;C3&quot;</span>,<span class="st">&quot;C4&quot;</span>))) <span class="sc">%&gt;%</span> </span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">relocate</span>(GeneticGroup,<span class="at">.after =</span> <span class="st">&quot;predOf&quot;</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(predOf,<span class="fu">desc</span>(SELIND)) <span class="sc">%&gt;%</span> </span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">write.csv</span>(.,<span class="at">file =</span> here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;output&quot;</span>,<span class="st">&quot;genomicPredictions_ModelDirDom.csv&quot;</span>),</span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>            <span class="at">row.names =</span> F)</span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>crossPreds_dirdom<span class="ot">&lt;-</span><span class="fu">readRDS</span>(<span class="at">file =</span> here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;output&quot;</span>,<span class="st">&quot;genomicMatePredictions_top121parents_ModelDirDom.rds&quot;</span>))</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>crossPreds_ad<span class="ot">&lt;-</span><span class="fu">readRDS</span>(<span class="at">file =</span> here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;output&quot;</span>,<span class="st">&quot;genomicMatePredictions_top121parents_ModelAD.rds&quot;</span>))</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>crossPreds_ad<span class="sc">$</span>tidyPreds[[<span class="dv">1</span>]] <span class="sc">%&gt;%</span> </span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">sireGroup=</span><span class="fu">case_when</span>(<span class="fu">grepl</span>(<span class="st">&quot;2013_|TMS13&quot;</span>,sireID)<span class="sc">~</span><span class="st">&quot;C1&quot;</span>,</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>                             <span class="fu">grepl</span>(<span class="st">&quot;TMS14&quot;</span>,sireID)<span class="sc">~</span><span class="st">&quot;C2&quot;</span>,</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>                             <span class="fu">grepl</span>(<span class="st">&quot;TMS15&quot;</span>,sireID)<span class="sc">~</span><span class="st">&quot;C3&quot;</span>,</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>                             <span class="fu">grepl</span>(<span class="st">&quot;TMS18&quot;</span>,sireID)<span class="sc">~</span><span class="st">&quot;C4&quot;</span>,</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>                             <span class="sc">!</span><span class="fu">grepl</span>(<span class="st">&quot;2013_|TMS13|TMS14|TMS15|TMS18&quot;</span>,sireID)<span class="sc">~</span><span class="st">&quot;PreGS&quot;</span>),</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>         <span class="at">damGroup=</span><span class="fu">case_when</span>(<span class="fu">grepl</span>(<span class="st">&quot;2013_|TMS13&quot;</span>,damID)<span class="sc">~</span><span class="st">&quot;C1&quot;</span>,</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>                            <span class="fu">grepl</span>(<span class="st">&quot;TMS14&quot;</span>,damID)<span class="sc">~</span><span class="st">&quot;C2&quot;</span>,</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>                            <span class="fu">grepl</span>(<span class="st">&quot;TMS15&quot;</span>,damID)<span class="sc">~</span><span class="st">&quot;C3&quot;</span>,</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>                            <span class="fu">grepl</span>(<span class="st">&quot;TMS18&quot;</span>,damID)<span class="sc">~</span><span class="st">&quot;C4&quot;</span>,</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>                            <span class="sc">!</span><span class="fu">grepl</span>(<span class="st">&quot;2013_|TMS13|TMS14|TMS15|TMS18&quot;</span>,damID)<span class="sc">~</span><span class="st">&quot;PreGS&quot;</span>),</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>         <span class="at">CrossGroup=</span><span class="fu">paste0</span>(sireGroup,<span class="st">&quot;x&quot;</span>,damGroup)) <span class="sc">%&gt;%</span> </span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">relocate</span>(<span class="fu">contains</span>(<span class="st">&quot;Group&quot;</span>),<span class="at">.before =</span> <span class="st">&quot;Nsegsnps&quot;</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">write.csv</span>(.,<span class="at">file =</span> here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;output&quot;</span>,<span class="st">&quot;genomicMatePredictions_top121parents_ModelAD.csv&quot;</span>),</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>            <span class="at">row.names =</span> F)</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>crossPreds_dirdom<span class="sc">$</span>tidyPreds[[<span class="dv">1</span>]] <span class="sc">%&gt;%</span> </span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">sireGroup=</span><span class="fu">case_when</span>(<span class="fu">grepl</span>(<span class="st">&quot;2013_|TMS13&quot;</span>,sireID)<span class="sc">~</span><span class="st">&quot;C1&quot;</span>,</span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>                             <span class="fu">grepl</span>(<span class="st">&quot;TMS14&quot;</span>,sireID)<span class="sc">~</span><span class="st">&quot;C2&quot;</span>,</span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>                             <span class="fu">grepl</span>(<span class="st">&quot;TMS15&quot;</span>,sireID)<span class="sc">~</span><span class="st">&quot;C3&quot;</span>,</span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>                             <span class="fu">grepl</span>(<span class="st">&quot;TMS18&quot;</span>,sireID)<span class="sc">~</span><span class="st">&quot;C4&quot;</span>,</span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>                             <span class="sc">!</span><span class="fu">grepl</span>(<span class="st">&quot;2013_|TMS13|TMS14|TMS15|TMS18&quot;</span>,sireID)<span class="sc">~</span><span class="st">&quot;PreGS&quot;</span>),</span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>         <span class="at">damGroup=</span><span class="fu">case_when</span>(<span class="fu">grepl</span>(<span class="st">&quot;2013_|TMS13&quot;</span>,damID)<span class="sc">~</span><span class="st">&quot;C1&quot;</span>,</span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>                            <span class="fu">grepl</span>(<span class="st">&quot;TMS14&quot;</span>,damID)<span class="sc">~</span><span class="st">&quot;C2&quot;</span>,</span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>                            <span class="fu">grepl</span>(<span class="st">&quot;TMS15&quot;</span>,damID)<span class="sc">~</span><span class="st">&quot;C3&quot;</span>,</span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>                            <span class="fu">grepl</span>(<span class="st">&quot;TMS18&quot;</span>,damID)<span class="sc">~</span><span class="st">&quot;C4&quot;</span>,</span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>                            <span class="sc">!</span><span class="fu">grepl</span>(<span class="st">&quot;2013_|TMS13|TMS14|TMS15|TMS18&quot;</span>,damID)<span class="sc">~</span><span class="st">&quot;PreGS&quot;</span>),</span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>         <span class="at">CrossGroup=</span><span class="fu">paste0</span>(sireGroup,<span class="st">&quot;x&quot;</span>,damGroup)) <span class="sc">%&gt;%</span> </span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">relocate</span>(<span class="fu">contains</span>(<span class="st">&quot;Group&quot;</span>),<span class="at">.before =</span> <span class="st">&quot;Nsegsnps&quot;</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">write.csv</span>(.,<span class="at">file =</span> here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;output&quot;</span>,<span class="st">&quot;genomicMatePredictions_top121parents_ModelDirDom.csv&quot;</span>),</span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>            <span class="at">row.names =</span> F)</span></code></pre></div>
 <p>Write CSV’s</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ## Format and write GEBV</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="co"># predModelA %&gt;% </span></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co">#   select(Trait,genomicPredOut) %&gt;% </span></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="co">#   unnest(genomicPredOut) %&gt;% </span></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="co">#   select(-varcomps) %&gt;% </span></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="co">#   unnest(gblups) %&gt;% </span></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co">#   select(-GETGV,-contains(&quot;PEV&quot;)) %&gt;%</span></span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="co">#   spread(Trait,GEBV) %&gt;% </span></span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="co">#   mutate(Group=case_when(GID %in% nrTP ~ &quot;nrTP&quot;,</span></span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c1a ~ &quot;C1a&quot;,</span></span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c1b ~ &quot;C1b&quot;,</span></span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c2a ~ &quot;C2a&quot;,</span></span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c2b ~ &quot;C2b&quot;,</span></span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c3a ~ &quot;C3a&quot;,</span></span>
-<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c3b ~ &quot;C3b&quot;)) %&gt;% </span></span>
-<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="co">#   select(Group,GID,any_of(traits)) %&gt;% </span></span>
-<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a><span class="co">#   arrange(desc(Group)) %&gt;% </span></span>
-<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a><span class="co">#   write.csv(., file = here::here(&quot;output&quot;,&quot;GEBV_NRCRI_ModelA_2021May03.csv&quot;), row.names = F)</span></span>
-<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
-<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a><span class="co"># ## Format and write GETGV</span></span>
-<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a><span class="co"># predModelADE %&gt;% </span></span>
-<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a><span class="co">#   select(Trait,genomicPredOut) %&gt;% </span></span>
-<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a><span class="co">#   unnest(genomicPredOut) %&gt;% </span></span>
-<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a><span class="co">#   select(-varcomps) %&gt;% </span></span>
-<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a><span class="co">#   unnest(gblups) %&gt;% </span></span>
-<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a><span class="co">#   select(GID,Trait,GETGV) %&gt;% </span></span>
-<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a><span class="co">#   spread(Trait,GETGV) %&gt;% </span></span>
-<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a><span class="co">#   mutate(Group=case_when(GID %in% nrTP ~ &quot;nrTP&quot;,</span></span>
-<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c1a ~ &quot;C1a&quot;,</span></span>
-<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c1b ~ &quot;C1b&quot;,</span></span>
-<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c2a ~ &quot;C2a&quot;,</span></span>
-<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c2b ~ &quot;C2b&quot;,</span></span>
-<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c3a ~ &quot;C3a&quot;,</span></span>
-<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c3b ~ &quot;C3b&quot;)) %&gt;% </span></span>
-<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a><span class="co">#   select(Group,GID,any_of(traits)) %&gt;% </span></span>
-<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a><span class="co">#   arrange(desc(Group)) %&gt;% </span></span>
-<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a><span class="co">#   write.csv(., file = here::here(&quot;output&quot;,&quot;GETGV_NRCRI_ModelADE_2021May03.csv&quot;), row.names = F)</span></span>
-<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
-<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a><span class="co"># </span><span class="al">###</span><span class="co"> Make a unified &quot;tidy&quot; long-form: </span></span>
-<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a><span class="co"># predModelA %&gt;% </span></span>
-<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a><span class="co">#   select(Trait,genomicPredOut) %&gt;% </span></span>
-<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a><span class="co">#   unnest(genomicPredOut) %&gt;% </span></span>
-<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a><span class="co">#   select(-varcomps) %&gt;% </span></span>
-<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a><span class="co">#   unnest(gblups) %&gt;% </span></span>
-<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a><span class="co">#   select(-GETGV) %&gt;% </span></span>
-<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a><span class="co">#   full_join(predModelADE %&gt;% </span></span>
-<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a><span class="co">#               select(Trait,genomicPredOut) %&gt;% </span></span>
-<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a><span class="co">#               unnest(genomicPredOut) %&gt;% </span></span>
-<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a><span class="co">#               select(-varcomps) %&gt;% </span></span>
-<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a><span class="co">#               unnest(gblups) %&gt;% </span></span>
-<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a><span class="co">#               rename(GEBV_modelADE=GEBV,</span></span>
-<span id="cb9-52"><a href="#cb9-52" aria-hidden="true" tabindex="-1"></a><span class="co">#                      PEV_modelADE=PEVa) %&gt;% </span></span>
-<span id="cb9-53"><a href="#cb9-53" aria-hidden="true" tabindex="-1"></a><span class="co">#               select(-genomicPredOut)) %&gt;% </span></span>
-<span id="cb9-54"><a href="#cb9-54" aria-hidden="true" tabindex="-1"></a><span class="co">#   mutate(Group=case_when(GID %in% nrTP ~ &quot;nrTP&quot;,</span></span>
-<span id="cb9-55"><a href="#cb9-55" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c1a ~ &quot;C1a&quot;,</span></span>
-<span id="cb9-56"><a href="#cb9-56" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c1b ~ &quot;C1b&quot;,</span></span>
-<span id="cb9-57"><a href="#cb9-57" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c2a ~ &quot;C2a&quot;,</span></span>
-<span id="cb9-58"><a href="#cb9-58" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c2b ~ &quot;C2b&quot;,</span></span>
-<span id="cb9-59"><a href="#cb9-59" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c3a ~ &quot;C3a&quot;,</span></span>
-<span id="cb9-60"><a href="#cb9-60" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c3b ~ &quot;C3b&quot;)) %&gt;% </span></span>
-<span id="cb9-61"><a href="#cb9-61" aria-hidden="true" tabindex="-1"></a><span class="co">#   relocate(Group,.before = GID) %&gt;% </span></span>
-<span id="cb9-62"><a href="#cb9-62" aria-hidden="true" tabindex="-1"></a><span class="co">#   write.csv(., file = here::here(&quot;output&quot;,&quot;genomicPredictions_NRCRI_2021May03.csv&quot;), row.names = F)</span></span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ## Format and write GEBV</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co"># predModelA %&gt;% </span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co">#   select(Trait,genomicPredOut) %&gt;% </span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co">#   unnest(genomicPredOut) %&gt;% </span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="co">#   select(-varcomps) %&gt;% </span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="co">#   unnest(gblups) %&gt;% </span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="co">#   select(-GETGV,-contains(&quot;PEV&quot;)) %&gt;%</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="co">#   spread(Trait,GEBV) %&gt;% </span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="co">#   mutate(Group=case_when(GID %in% nrTP ~ &quot;nrTP&quot;,</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c1a ~ &quot;C1a&quot;,</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c1b ~ &quot;C1b&quot;,</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c2a ~ &quot;C2a&quot;,</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c2b ~ &quot;C2b&quot;,</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c3a ~ &quot;C3a&quot;,</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c3b ~ &quot;C3b&quot;)) %&gt;% </span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="co">#   select(Group,GID,any_of(traits)) %&gt;% </span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="co">#   arrange(desc(Group)) %&gt;% </span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a><span class="co">#   write.csv(., file = here::here(&quot;output&quot;,&quot;GEBV_NRCRI_ModelA_2021May03.csv&quot;), row.names = F)</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a><span class="co"># ## Format and write GETGV</span></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a><span class="co"># predModelADE %&gt;% </span></span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a><span class="co">#   select(Trait,genomicPredOut) %&gt;% </span></span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a><span class="co">#   unnest(genomicPredOut) %&gt;% </span></span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a><span class="co">#   select(-varcomps) %&gt;% </span></span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a><span class="co">#   unnest(gblups) %&gt;% </span></span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a><span class="co">#   select(GID,Trait,GETGV) %&gt;% </span></span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a><span class="co">#   spread(Trait,GETGV) %&gt;% </span></span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a><span class="co">#   mutate(Group=case_when(GID %in% nrTP ~ &quot;nrTP&quot;,</span></span>
+<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c1a ~ &quot;C1a&quot;,</span></span>
+<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c1b ~ &quot;C1b&quot;,</span></span>
+<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c2a ~ &quot;C2a&quot;,</span></span>
+<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c2b ~ &quot;C2b&quot;,</span></span>
+<span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c3a ~ &quot;C3a&quot;,</span></span>
+<span id="cb10-34"><a href="#cb10-34" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c3b ~ &quot;C3b&quot;)) %&gt;% </span></span>
+<span id="cb10-35"><a href="#cb10-35" aria-hidden="true" tabindex="-1"></a><span class="co">#   select(Group,GID,any_of(traits)) %&gt;% </span></span>
+<span id="cb10-36"><a href="#cb10-36" aria-hidden="true" tabindex="-1"></a><span class="co">#   arrange(desc(Group)) %&gt;% </span></span>
+<span id="cb10-37"><a href="#cb10-37" aria-hidden="true" tabindex="-1"></a><span class="co">#   write.csv(., file = here::here(&quot;output&quot;,&quot;GETGV_NRCRI_ModelADE_2021May03.csv&quot;), row.names = F)</span></span>
+<span id="cb10-38"><a href="#cb10-38" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb10-39"><a href="#cb10-39" aria-hidden="true" tabindex="-1"></a><span class="co"># </span><span class="al">###</span><span class="co"> Make a unified &quot;tidy&quot; long-form: </span></span>
+<span id="cb10-40"><a href="#cb10-40" aria-hidden="true" tabindex="-1"></a><span class="co"># predModelA %&gt;% </span></span>
+<span id="cb10-41"><a href="#cb10-41" aria-hidden="true" tabindex="-1"></a><span class="co">#   select(Trait,genomicPredOut) %&gt;% </span></span>
+<span id="cb10-42"><a href="#cb10-42" aria-hidden="true" tabindex="-1"></a><span class="co">#   unnest(genomicPredOut) %&gt;% </span></span>
+<span id="cb10-43"><a href="#cb10-43" aria-hidden="true" tabindex="-1"></a><span class="co">#   select(-varcomps) %&gt;% </span></span>
+<span id="cb10-44"><a href="#cb10-44" aria-hidden="true" tabindex="-1"></a><span class="co">#   unnest(gblups) %&gt;% </span></span>
+<span id="cb10-45"><a href="#cb10-45" aria-hidden="true" tabindex="-1"></a><span class="co">#   select(-GETGV) %&gt;% </span></span>
+<span id="cb10-46"><a href="#cb10-46" aria-hidden="true" tabindex="-1"></a><span class="co">#   full_join(predModelADE %&gt;% </span></span>
+<span id="cb10-47"><a href="#cb10-47" aria-hidden="true" tabindex="-1"></a><span class="co">#               select(Trait,genomicPredOut) %&gt;% </span></span>
+<span id="cb10-48"><a href="#cb10-48" aria-hidden="true" tabindex="-1"></a><span class="co">#               unnest(genomicPredOut) %&gt;% </span></span>
+<span id="cb10-49"><a href="#cb10-49" aria-hidden="true" tabindex="-1"></a><span class="co">#               select(-varcomps) %&gt;% </span></span>
+<span id="cb10-50"><a href="#cb10-50" aria-hidden="true" tabindex="-1"></a><span class="co">#               unnest(gblups) %&gt;% </span></span>
+<span id="cb10-51"><a href="#cb10-51" aria-hidden="true" tabindex="-1"></a><span class="co">#               rename(GEBV_modelADE=GEBV,</span></span>
+<span id="cb10-52"><a href="#cb10-52" aria-hidden="true" tabindex="-1"></a><span class="co">#                      PEV_modelADE=PEVa) %&gt;% </span></span>
+<span id="cb10-53"><a href="#cb10-53" aria-hidden="true" tabindex="-1"></a><span class="co">#               select(-genomicPredOut)) %&gt;% </span></span>
+<span id="cb10-54"><a href="#cb10-54" aria-hidden="true" tabindex="-1"></a><span class="co">#   mutate(Group=case_when(GID %in% nrTP ~ &quot;nrTP&quot;,</span></span>
+<span id="cb10-55"><a href="#cb10-55" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c1a ~ &quot;C1a&quot;,</span></span>
+<span id="cb10-56"><a href="#cb10-56" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c1b ~ &quot;C1b&quot;,</span></span>
+<span id="cb10-57"><a href="#cb10-57" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c2a ~ &quot;C2a&quot;,</span></span>
+<span id="cb10-58"><a href="#cb10-58" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c2b ~ &quot;C2b&quot;,</span></span>
+<span id="cb10-59"><a href="#cb10-59" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c3a ~ &quot;C3a&quot;,</span></span>
+<span id="cb10-60"><a href="#cb10-60" aria-hidden="true" tabindex="-1"></a><span class="co">#                          GID %in% c3b ~ &quot;C3b&quot;)) %&gt;% </span></span>
+<span id="cb10-61"><a href="#cb10-61" aria-hidden="true" tabindex="-1"></a><span class="co">#   relocate(Group,.before = GID) %&gt;% </span></span>
+<span id="cb10-62"><a href="#cb10-62" aria-hidden="true" tabindex="-1"></a><span class="co">#   write.csv(., file = here::here(&quot;output&quot;,&quot;genomicPredictions_NRCRI_2021May03.csv&quot;), row.names = F)</span></span></code></pre></div>
 </div>
 <div id="results" class="section level1">
 <h1>Results</h1>
@@ -1119,7 +1260,7 @@ Full genomic prediction including (1) genomic prediction of clone GBLUPs and (2)
 </button>
 </p>
 <div id="workflowr-sessioninfo" class="collapse">
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span></code></pre></div>
 </div>
 </div>
 
