@@ -61,11 +61,12 @@ singularity pull rocker.sif docker://rocker/tidyverse:latest;
 ```
 
 For analysis, operate each R session within a singularity Linux shell within a screen shell.
-```{bash, eval=F}
-# 1) start a screen shell
-screen; 
+```{bash set-up R environment, eval=F}
+# 1) start a screen shell 
+screen; # or screen -r if re-attaching...
 # 2) start the singularity Linux shell inside that
-singularity shell /workdir/$USER/rocker.sif; 
+#singularity shell /workdir/$USER/rocker.sif; 
+singularity shell ~/rocker2.sif; 
 # Project directory, so R will use as working dir.
 cd /home/mw489/implementGMSinCassava/;
 # 3) Start R
@@ -83,7 +84,7 @@ Below, source it and use it for a full cross-validation run.
 # install.packages('future.callr')
 ```
 
-```{r primary inputs}
+```{r parent-wise CV inputs}
 require(tidyverse); require(magrittr); 
 # 5 threads per Rsession for matrix math (openblas)
 RhpcBLASctl::blas_set_num_threads(5)
@@ -237,132 +238,408 @@ saveRDS(cvAD_5rep5fold,here::here("output","cvAD_5rep5fold_predAccuracy.rds"))
 # > saveRDS(cvAD_5rep5fold,here::here("output","cvAD_5rep5fold_predAccuracy.rds"))
 ```
 
-# [TO DO] PHG parent-wise cross-validation
 
-# [TO DO] Standard clone-wise cross-validation
+# Standard clone-wise cross-validation
 
-## Add DirDom to runCrossVal func
-```{r runCrossVal}
-#' @param byGroup logical, if TRUE, assumes a column named "Group" is present which unique classifies each GID into some genetic grouping.
-#' @param modelType string, A, AD or ADE representing model with Additive-only, Add. plus Dominance, and Add. plus Dom. plus. AxD Epistasis (AD), respectively.
-#' @param grms list of GRMs where each element is named either A, D, or, AD. Matrices supplied must match required by A, AD and ADE models. For ADE grms=list(A=A,D=D,AD=AD)...
-#' @param augmentTP option to supply an additional set of training data, which will be added to each training model but never included in the test set.
-#' @param TrainTestData data.frame with de-regressed BLUPs, BLUPs and weights (WT) for training and test. If byGroup==TRUE, a column with Group as the header uniquely classifying GIDs into genetic groups, is expected.
-runCrossVal<-function(TrainTestData,modelType,grms,nrepeats,nfolds,ncores=1,
-                          byGroup=FALSE,augmentTP=NULL,gid="GID",...){
-  require(sommer); require(rsample)
-  # Set-up replicated cross-validation folds
-  # splitting by clone (if clone in training dataset, it can't be in testing)
-  if(byGroup){
-    cvsamples<-tibble(GroupName=unique(TrainTestData$Group))
-  } else { cvsamples<-tibble(GroupName="None") }
-  cvsamples<-cvsamples %>%
-    mutate(Splits=map(GroupName,function(GroupName){
-      if(GroupName!="None"){
-        thisgroup<-TrainTestData %>%
-          filter(Group==GroupName) } else { thisgroup<-TrainTestData }
-      out<-tibble(repeats=1:nrepeats,
-                  splits=rerun(nrepeats,group_vfold_cv(thisgroup, group = gid, v = nfolds))) %>%
-        unnest(splits)
-      return(out)
-    })) %>%
-    unnest(Splits)
+The new "parent-wise" cross-validation scheme assesses the accuracy of predicting the means and variances of crosses. 
 
-  ## Internal function
-  ## fits prediction model and calcs. accuracy for each train-test split
+The "standard" cross-validation, used in all previous genomic selection analyses (_e.g._ [IITA_2020GS CV](https://wolfemd.github.io/IITA_2020GS/06-Results.html#cross-validation-accuracy), [NRCRI_2021GS CV](https://wolfemd.github.io/NRCRI_2021GS/05-Results.html#Prediction_accuracy), [TARI_2020GS CV](https://wolfemd.github.io/TARI_2020GS/05-Results.html#Prediction_accuracy)), assesses the accuracy predicting the individual performance (breeding value or TGV). 
 
-  fitModel<-possibly(function(splits,modelType,augmentTP,TrainTestData,GroupName,grms){
-    starttime<-proc.time()[3]
-    # Set-up training set
-    trainingdata<-training(splits)
-    ## Make sure, if there is an augmentTP, no GIDs in test-sets
-    if(!is.null(augmentTP)){
-      ## remove any test-set members from augment TP before adding to training data
-      training_augment<-augmentTP %>% filter(!(!!sym(gid) %in% testing(splits)[[gid]]))
-      trainingdata<-bind_rows(trainingdata,training_augment) }
-    if(GroupName!="None"){ trainingdata<-bind_rows(trainingdata,
-                                                   TrainTestData %>%
-                                                     filter(Group!=GroupName,
-                                                            !(!!sym(gid) %in% testing(splits)[[gid]]))) }
-    # Subset kinship matrices
-    traintestgids<-union(trainingdata[[gid]],testing(splits)[[gid]])
-    A1<-grms[["A"]][traintestgids,traintestgids]
-    trainingdata[[paste0(gid,"a")]]<-factor(trainingdata[[gid]],levels=rownames(A1))
-    if(modelType %in% c("AD","ADE")){
-      D1<-grms[["D"]][traintestgids,traintestgids]
-      trainingdata[[paste0(gid,"d")]]<-factor(trainingdata[[gid]],levels=rownames(D1))
-      if(modelType=="ADE"){
-        #AA1<-grms[["AA"]][traintestgids,traintestgids]
-        AD1<-grms[["AD"]][traintestgids,traintestgids]
-        diag(AD1)<-diag(AD1)+1e-06
-        #DD1<-grms[["DD"]][traintestgids,traintestgids]
-        #trainingdata[[paste0(gid,"aa")]]<-factor(trainingdata[[gid]],levels=rownames(AA1))
-        trainingdata[[paste0(gid,"ad")]]<-factor(trainingdata[[gid]],levels=rownames(AD1))
-        #trainingdata[[paste0(gid,"dd")]]<-factor(trainingdata[[gid]],levels=rownames(DD1))
-      }
-    }
-    # Set-up random model statements
-    randFormula<-paste0("~vs(",gid,"a,Gu=A1)")
-    if(modelType %in% c("AD","ADE")){
-      randFormula<-paste0(randFormula,"+vs(",gid,"d,Gu=D1)")
-      if(modelType=="ADE"){
-        randFormula<-paste0(randFormula,"+vs(",gid,"ad,Gu=AD1)")
-        #"+vs(",gid,"aa,Gu=AA1)",
-        #"+vs(",gid,"ad,Gu=AD1)")
-        #"+vs(",gid,"dd,Gu=DD1)")
-      }
-    }
-    # Fit genomic prediction model
-    fit <- mmer(fixed = drgBLUP ~1,
-                random = as.formula(randFormula),
-                weights = WT,
-                data=trainingdata)
-    # Gather the BLUPs
-    gblups<-tibble(GID=as.character(names(fit$U[[paste0("u:",gid,"a")]]$drgBLUP)),
-                   GEBV=as.numeric(fit$U[[paste0("u:",gid,"a")]]$drgBLUP))
-    if(modelType %in% c("AD","ADE")){
-      gblups %<>% mutate(GEDD=as.numeric(fit$U[[paste0("u:",gid,"d")]]$drgBLUP))
-      if(modelType=="ADE"){
-        gblups %<>% mutate(#GEEDaa=as.numeric(fit$U[[paste0("u:",gid,"aa")]]$drgBLUP),
-          GEEDad=as.numeric(fit$U[[paste0("u:",gid,"ad")]]$drgBLUP))
-        #GEEDdd=as.numeric(fit$U[[paste0("u:",gid,"dd")]]$drgBLUP))
-      }
-    }
-    # Calc GETGVs
-    ## Note that for modelType=="A", GEBV==GETGV
-    gblups %<>%
-      mutate(GETGV=rowSums(.[,grepl("GE",colnames(.))]))
-    # Test set validation data
-    validationData<-TrainTestData %>%
-      dplyr::select(gid,BLUP) %>%
-      filter(GID %in% testing(splits)[[gid]])
-    # Measure accuracy in test set
-    ## cor(GEBV,BLUP)
-    ## cor(GETGV,BLUP)
-    accuracy<-gblups %>%
-      mutate(GETGV=rowSums(.[,grepl("GE",colnames(.))])) %>%
-      filter(GID %in% testing(splits)[[gid]]) %>%
-      left_join(validationData) %>%
-      summarize(accGEBV=cor(GEBV,BLUP, use = 'complete.obs'),
-                accGETGV=cor(GETGV,BLUP, use = 'complete.obs'))
-    computeTime<-proc.time()[3]-starttime
-    accuracy %<>% mutate(computeTime=computeTime)
-    return(accuracy)
-  },otherwise = NA)
-  ## Run models across all train-test splits
-  ## Parallelize
-  require(furrr); plan(multicore, workers = ncores)
-  options(future.globals.maxSize=+Inf); options(future.rng.onMisuse="ignore")
+**[NEW]**: Below, I upgrade the `runCrossVal()` function used previously for "standard" cross-validation. Include selection index (via `selInd=` and `SIwts=` arguments) and a `modelType="DirDom"` option.
 
-  cvsamples<-cvsamples %>%
-    mutate(accuracy=future_map2(splits,GroupName,
-                                ~fitModel(splits=.x,GroupName=.y,
-                                          modelType=modelType,augmentTP=NULL,TrainTestData=TrainTestData,grms=grms),
-                                .progress = FALSE)) %>%
-    unnest(accuracy)
-  return(cvsamples)
-}
+```{bash R environment, eval=F}
+# 1) start a screen shell 
+screen; # or screen -r if re-attaching...
+# 2) start the singularity Linux shell inside that
+#singularity shell /workdir/$USER/rocker.sif; 
+singularity shell ~/rocker2.sif; 
+# Project directory, so R will use as working dir.
+cd /home/mw489/implementGMSinCassava/;
+# 3) Start R
+R
 ```
+```{r clone-wise CV inputs}
+require(tidyverse); require(magrittr); 
+
+# 5 threads per Rsession for matrix math (openblas)
+RhpcBLASctl::blas_set_num_threads(5)
+
+# SOURCE CORE FUNCTIONS
+source(here::here("code","gmsFunctions"))
+source(here::here("code","predCrossVar.R"))
+
+# BLUPs
+blups<-readRDS(file=here::here("data","blups_forCrossVal.rds")) %>% 
+  dplyr::select(-varcomp) %>% 
+  rename(TrainingData=blups) # for compatibility with downstream functions
+
+# SELECTION INDEX WEIGHTS
+## from IYR+IK
+## note that not ALL predicted traits are on index
+SIwts<-c(logFYLD=20,
+         HI=10,
+         DM=15,
+         MCMDS=-10,
+         logRTNO=12,
+         logDYLD=20,
+         logTOPYLD=15,
+         PLTHT=10) 
+```
+
+## Add DirDom and SELIND to runCrossVal func
+
+The new `runCrossVal()` function will:
+
+- optionally compute selection index accuracy.
+- internally handle looping over multiple traits, rather than the previous version that handled one trait only
+  * If only 1 trait (for now) force user to still make input as single element list
+  * b/c who really has only 1 trait....
+- Add control of both ncores and nBLASthreads to match other functions in `gmsFunctions.R`, `parentWiseCrossVal.R` and `predCrossVar.R`.
+- The fitModels() internal function now loops over traits in serial.
+- `ncores=` now parallelizes over repeat-folds while traits are handled in serial by each parallel worker
+- `nBLASthreads=` controls the number of additional cores each worker uses to speed matrix computations
+- if requested by `selInd=TRUE` (and supplying `SIwts`) each worker computes and returns the selection index accuracy 
+
+```{r debug settings}
+# # runCrossVal() inputs
+# modelType="DirDom"
+# blups %<>% 
+#   slice(1:2) %>% # for testing, just 2 traits
+#   mutate(TrainingData=map(TrainingData, # and sample a small fraction of clones 
+#                           ~sample_frac(.,size = 0.1,replace = F)))
+# 
+# 
+# nrepeats=2; 
+# nfolds=2
+# gid="GID"
+# seed<-910838019
+# 
+# ncores=2
+# nBLASthreads=20
+# selInd=TRUE
+# SIwts<-SIwts[blups$Trait]
+```
+```{r develop a new runCrossVal function}
+#' @param modelType string, A, AD representing model with Additive-only, Add. plus Dominance, respectively. **NEW**: modelType="DirDom" includes a genome-wide homozygosity effect as in Xiang et al. 2016, uses a different dominance GRM and will probably be a little slower.
+#' @param grms list of GRMs where each element is named either A, D, or, AD. Matrices supplied must match required by A, AD and ADE models. For ADE grms=list(A=A,D=D)...
+#' @param blups nested data.frame with list-column "TrainingData" containing BLUPs. Each element of "TrainingData" list, is data.frame with de-regressed BLUPs, BLUPs and weights (WT) for training and test. If byGroup==TRUE, a column with Group as the header uniquely classifying GIDs into genetic groups, is expected.
+# runCrossVal<-function(blups,
+#                       modelType,
+#                       selInd,SIwts = NULL,
+#                       grms,dosages=NULL,
+#                       nrepeats,nfolds,
+#                       ncores=1,nBLASthreads=NULL,
+#                       gid="GID",seed=NULL,...){
+# 
+# # same train-test folds across traits
+# gids<-blups %>% 
+#   unnest(TrainingData) %>% 
+#   distinct(!!sym(gid)) %>% 
+#   .[[gid]]
+# 
+# 
+# # whether or not user inputs a master seed
+# # generate and store in output
+# # seeds to make each replicate reproducible.
+# if(!is.null(seed)){
+#   set.seed(seed); 
+#   seeds<-sample(1:1e6,replace = F,size = nrepeats) 
+# } else { 
+#   seeds-sample(1:1e6,replace = F,size = nrepeats) }
+# 
+# # Set-up replicated cross-validation folds
+# # splitting by clone (if clone in training dataset, it can't be in testing)
+# require(rsample)
+# cvsamples<-tibble(repeats=1:nrepeats,
+#        seeds=seeds,
+#        splits=map(seeds,function(seeds,...){
+#          set.seed(seeds);
+#          cvfolds<-vfold_cv(tibble(GID=gids),v = nfolds)
+#          return(cvfolds)})) %>% 
+#   unnest(splits)
+# 
+# ## The fitModels() internal function
+# ## Now runs _across_ traits and, if requested,
+# ## computes the selection index accuracy 
+# ## runCrossVal() now parallelizes over repeat-folds using ncores
+# ## Traits are handled in serial by each parallel worker
+# ## nBLASthreads controls the number of additional cores each worker
+# ## uses to speed matrix computations
+# ## Internal function
+# ## fits prediction model and calcs. accuracy for each train-test split
+# 
+# fitModels<-function(splits,modelType,
+#                     blups,selInd,SIwts,
+#                     gid="GID",
+#                     grms,dosages=NULL,
+#                     nBLASthreads){
+# 
+# # internal testing of fitModels() inputs - one rep-fold
+# # splits<-cvsamples$splits[[1]]
+# # rm(splits)
+#   
+#   if(!is.null(nBLASthreads)) { RhpcBLASctl::blas_set_num_threads(nBLASthreads) }
+#   # workers in plan(multisession) need this call internal to the function, it seems.
+#   
+# # subset kinship (and if modelType=="DirDom" also the dosages) matrices
+# ### only lines with BLUPs for cross-validation
+# A<-grms[["A"]][gids,gids]
+# if(modelType %in% c("AD","DirDom")){ 
+#   D<-grms[["D"]][gids,gids]  }
+# if(modelType=="DirDom"){ dosages<-dosages[gids,] }
+#             
+# # Set-up training set
+#   predictions<-blups %>%
+#     mutate(modelOut=map(TrainingData,function(TrainingData,...){
+#       #TrainingData<-blups$TrainingData[[1]]
+#       
+#       trainingdata<-TrainingData %>% 
+#         dplyr::rename(GID=!!sym(gid)) %>%
+#         filter(GID %in% training(splits)[[gid]],
+#                GID %in% rownames(A))
+#       
+#       trainingdata[[paste0(gid,"a")]]<-factor(trainingdata[["GID"]],
+#                                               levels=rownames(A))
+#       if(modelType %in% c("AD")){
+#         trainingdata[[paste0(gid,"d")]]<-trainingdata[[paste0(gid,"a")]] }
+#       if(modelType %in% c("DirDom")){
+#         trainingdata[[paste0(gid,"d_star")]]<-trainingdata[[paste0(gid,"a")]] }
+#       
+#       # Set-up random model statements
+#       randFormula<-paste0("~vs(",gid,"a,Gu=A)")
+#       if(modelType %in% c("AD")){
+#         randFormula<-paste0(randFormula,"+vs(",gid,"d,Gu=D)") }
+#       if(modelType=="DirDom"){
+#         randFormula<-paste0(randFormula,"+vs(",gid,"d_star,Gu=D)")
+#         f<-getPropHom(dosages)
+#         trainingdata %<>% mutate(f=f[trainingdata$GID]) }
+#       
+#       # Fixed model statements
+#       fixedFormula<-ifelse(modelType=="DirDom",
+#                            "drgBLUP ~1+f","drgBLUP ~1")
+#       # Fit genomic prediction model
+#       require(sommer)
+#       fit <- sommer::mmer(fixed = as.formula(fixedFormula),
+#                           random = as.formula(randFormula),
+#                           weights = WT,
+#                           data=trainingdata,
+#                           date.warning = F,
+#                           getPEV = FALSE)
+#       
+#       print(paste0("GBLUP model complete - one trait"))
+#       if(modelType=="DirDom"){
+#         
+#         # Backsolve SNP effects
+#         # Compute allele sub effects
+#         ## Every model has an additive random term
+#         ga<-as.matrix(fit$U[[paste0("u:",gid,"a")]]$drgBLUP,ncol=1)
+#         M<-centerDosage(dosages)
+#         
+#         # model DirDom is a different add-dom partition,
+#         ### add effects are not allele sub effects and gblups are not GEBV
+#         addsnpeff<-backsolveSNPeff(Z=M,g=ga)
+#         ### dom effects are called d*, gd_star or domstar
+#         ### because of the genome-wide homoz. term included in model
+#         gd_star<-as.matrix(fit$U[[paste0("u:",gid,"d_star")]]$drgBLUP,ncol=1)
+#         domdevMat_genotypic<-dose2domDevGenotypic(dosages)
+#         domstar_snpeff<-backsolveSNPeff(Z=domdevMat_genotypic,g=gd_star)
+#         ### b = the estimate (BLUE) for the genome-wide homoz. effect
+#         b<-fit$Beta[fit$Beta$Effect=="f","Estimate"]
+#         ### calc. domsnpeff including the genome-wide homoz. effect
+#         ### divide the b effect up by number of SNPs and _subtract_ from domstar
+#         domsnpeff<-domstar_snpeff-(b/length(domstar_snpeff))
+#         
+#         ### allele substitution effects using a+d(q-p) where d=d*-b/p
+#         p<-getAF(dosages)
+#         q<-1-p
+#         allelesubsnpeff<-addsnpeff+(domsnpeff*(q-p))
+#       }
+#       
+#  # Gather the GBLUPs
+# if(modelType %in% c("A","AD")){
+#   gblups<-tibble(GID=as.character(names(fit$U[[paste0("u:",gid,"a")]]$drgBLUP)),
+#                  GEBV=as.numeric(fit$U[[paste0("u:",gid,"a")]]$drgBLUP)) }
+# if(modelType=="AD"){
+#   gblups %<>% # compute GEDD (genomic-estimated dominance deviation)
+#     mutate(GEDD=as.numeric(fit$U[[paste0("u:",gid,"d")]]$drgBLUP),
+#            # compute GETGV
+#            GETGV=rowSums(.[,grepl("GE",colnames(.))])) }
+# if(modelType=="DirDom"){
+#                   # re-calc the GBLUP, GEdomval using dom. effects where d=d*-b/p
+#   ge_domval<-domdevMat_genotypic%*%domsnpeff
+#   # calc. the GEBV using allele sub. effects where alpha=a+d(p-q), and d=d*-b/p
+#   gebv<-M%*%allelesubsnpeff
+#   # Tidy tibble of GBLUPs
+#   gblups<-tibble(GID=as.character(names(fit$U[[paste0("u:",gid,"a")]]$drgBLUP)),
+#                  GEadd=as.numeric(fit$U[[paste0("u:",gid,"a")]]$drgBLUP),
+#                  GEdom_star=as.numeric(fit$U[[paste0("u:",gid,"d_star")]]$drgBLUP)) %>%
+#     left_join(tibble(GID=rownames(ge_domval),GEdomval=as.numeric(ge_domval))) %>%
+#     left_join(tibble(GID=rownames(gebv),GEBV=as.numeric(gebv))) %>%
+#     # GETGV from GEadd + GEdomval
+#     mutate(GETGV=GEadd+GEdomval)
+#   print(paste0("Backsolving SNP effects for DirDom model compete - one trait"))
+# }
+# 
+#  # this is to remove conflicts with dplyr function select() downstream
+# detach("package:sommer",unload = T); detach("package:MASS",unload = T)
+# 
+# # free up the memory footprint
+# rm(fit)
+#       
+# # Calculate accuracy for each trait
+# ## Convert predicted gblups to a long-format
+# gblups %<>% 
+#   select(GID,any_of(c("GEBV","GETGV"))) %>% 
+#   pivot_longer(any_of(c("GEBV","GETGV")),
+#                names_to = "predOf",
+#                values_to = "GBLUP")
+# 
+# ## Grab the test set BLUPs as validation data
+# validationData<-TrainingData %>% 
+#   dplyr::rename(GID=!!sym(gid)) %>%
+#   dplyr::select(GID,BLUP) %>% 
+#   filter(GID %in% testing(splits)[[gid]])
+# 
+#   # Measure accuracy in test set
+#   ## cor(GEBV,BLUP)
+#   ## cor(GETGV,BLUP)
+# accuracy<-gblups %>% 
+#   left_join(validationData) %>% 
+#   nest(predVSobs=c(GID,GBLUP,BLUP)) %>% 
+#   mutate(Accuracy=map_dbl(predVSobs,~cor(.$GBLUP,.$BLUP, use = 'complete.obs')))
+# return(accuracy)
+# }))
+#   print(paste0("Genomic predictions done for all traits in one repeat-fold"))
+# 
+# predictions %<>% 
+#   select(-TrainingData) %>% 
+#   unnest(modelOut)
+# 
+# if(selInd){
+#   # calc. SELIND and SELIND accuracy
+#   
+#   gblups<-predictions %>% 
+#     select(-Accuracy) %>% 
+#     unnest(predVSobs) %>% 
+#     select(-BLUP) %>% 
+#     pivot_wider(values_from = "GBLUP",
+#                 names_from = "Trait")
+#    gblups %<>% 
+#      mutate(GBLUP=as.numeric((gblups %>%
+#                                  select(names(SIwts)) %>%
+#                                  as.matrix(.))%*%SIwts)) %>% 
+#      select(predOf,GID,GBLUP)
+# 
+#    validationData<-blups %>% 
+#      unnest(TrainingData) %>% 
+#      select(Trait,GID,BLUP) %>% 
+#      pivot_wider(names_from = "Trait", values_from = "BLUP")
+#    validationData %<>% 
+#      mutate(BLUP=as.numeric((validationData %>%
+#                                select(names(SIwts)) %>%
+#                                as.matrix(.))%*%SIwts)) %>% 
+#      select(GID,BLUP)
+#    
+#    predictions %<>%
+#      bind_rows(gblups %>% 
+#                  left_join(validationData) %>% 
+#                  nest(predVSobs=c(GID,GBLUP,BLUP)) %>% 
+#                  mutate(Trait="SELIND") %>% 
+#                  relocate(Trait,.before = 1) %>% 
+#                  mutate(Accuracy=map_dbl(predVSobs,~cor(.$GBLUP,.$BLUP, use = 'complete.obs')))) 
+# }
+# 
+# predictions %<>% 
+#      mutate(NcompleteTestPairs=map_dbl(predVSobs,~na.omit(.) %>% nrow(.)))
+# 
+# return(predictions) 
+# 
+# }
+# require(furrr); plan(multisession, workers = ncores)
+# options(future.globals.maxSize=+Inf); options(future.rng.onMisuse="ignore")
+# # quick test
+# #cvsamples %<>% slice(1:2)
+# cvsamples %<>% 
+#   mutate(accuracyEstOut=future_map(splits,
+#                                    ~fitModels(splits=.,modelType=modelType,
+#                                               blups=blups,
+#                                               selInd=selInd,SIwts=SIwts,
+#                                               gid=gid,grms=grms,dosages=dosages,
+#                                               nBLASthreads=nBLASthreads)))
+# plan(sequential)
+# return(cvsamples) 
+# }
+
+```
+```{r test run the new function}
+# # test<-fitModels(splits,modelType,blups,selInd,SIwts,
+# #                 gid,grms,dosages,nBLASthreads)
+# test_dirdom<-runCrossVal(blups=blups,modelType="DirDom",
+#                          selInd=TRUE,SIwts=SIwts,
+#                          grms=grms,dosages=dosages,
+#                          nrepeats=2,nfolds=2,
+#                          ncores=4,nBLASthreads=20,
+#                          gid="GID",seed=121212)
+# test_dirdom %>% unnest(accuracyEstOut)
+# 
+# grms_ad<-list(A=readRDS(file=here::here("output","kinship_A_IITA_2021May13.rds")),
+#               D=readRDS(file=here::here("output","kinship_D_IITA_2021May13.rds")))
+# test_ad<-runCrossVal(blups=blups,modelType="AD",
+#                      selInd=TRUE,SIwts=SIwts,
+#                      grms=grms_ad,dosages=NULL,
+#                      nrepeats=2,nfolds=2,
+#                      ncores=4,nBLASthreads=20,
+#                      gid="GID",seed=121212)
+# test_ad %>% unnest(accuracyEstOut) %>% select(-splits,-predVSobs) %>% as.data.frame
+
+```
+
+## Full run of both models 5-reps x 5-folds
+
+cbsulm - 112 cores, 512 GB RAM
+```{r runCrossVal - model DirDom}
+# GENOMIC RELATIONSHIP MATRICES (GRMS)
+grms<-list(A=readRDS(file=here::here("output","kinship_A_IITA_2021May13.rds")),
+           D=readRDS(file=here::here("output",
+                                     "kinship_domGenotypic_IITA_2021July5.rds")))
+## using A+domGenotypic (instead of domClassic used previously)
+## will achieve appropriate dom effects for predicting family mean TGV
+## but resulting add effects WILL NOT represent allele sub. effects and thus
+## predictions won't equal GEBV, allele sub. effects will be post-computed
+## as alpha = a + d(q-p)
+
+# DOSAGE MATRIX
+dosages<-readRDS(file=here::here("data",
+                                 "dosages_IITA_filtered_2021May13.rds"))
+
+stdcv_dirdom<-runCrossVal(blups=blups,modelType="DirDom",
+                          selInd=TRUE,SIwts=SIwts,
+                          grms=grms,dosages=dosages,
+                          nrepeats=5,nfolds=5,
+                          ncores=20,nBLASthreads=5,
+                          gid="GID",seed=9108338019)
+saveRDS(stdcv_dirdom,here::here("output","stdcv_DirDom_predAccuracy.rds"))
+
+```
+
+cbsulm - 112 cores, 512 GB RAM
+```{r runCrossVal - model AD}
+# GENOMIC RELATIONSHIP MATRICES (GRMS)
+grms_ad<-list(A=readRDS(file=here::here("output","kinship_A_IITA_2021May13.rds")),
+              D=readRDS(file=here::here("output","kinship_D_IITA_2021May13.rds")))
+## achieves the classic TGV=BV+TGV partition
+stdcv_ad<-runCrossVal(blups=blups,modelType="AD",
+                          selInd=TRUE,SIwts=SIwts,
+                          grms=grms,dosages=NULL,
+                          nrepeats=5,nfolds=5,
+                          ncores=20,nBLASthreads=5,
+                          gid="GID",seed=9108338019)
+saveRDS(stdcv_ad,here::here("output","stdcv_AD_predAccuracy.rds"))
+```
+
+
+
+# [TO DO] PHG parent-wise cross-validation
 
 # Next step / Results
 
