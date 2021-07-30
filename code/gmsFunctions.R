@@ -338,123 +338,252 @@ kinship<-function(M,type){
   }
 }
 
-#' @param byGroup logical, if TRUE, assumes a column named "Group" is present which unique classifies each GID into some genetic grouping.
-#' @param modelType string, A, AD or ADE representing model with Additive-only, Add. plus Dominance, and Add. plus Dom. plus. AxD Epistasis (AD), respectively.
-#' @param grms list of GRMs where each element is named either A, D, or, AD. Matrices supplied must match required by A, AD and ADE models. For ADE grms=list(A=A,D=D,AD=AD)...
-#' @param augmentTP option to supply an additional set of training data, which will be added to each training model but never included in the test set.
-#' @param TrainTestData data.frame with de-regressed BLUPs, BLUPs and weights (WT) for training and test. If byGroup==TRUE, a column with Group as the header uniquely classifying GIDs into genetic groups, is expected.
-runCrossVal<-function(TrainTestData,modelType,grms,nrepeats,nfolds,ncores=1,
-                          byGroup=FALSE,augmentTP=NULL,gid="GID",...){
-  require(sommer); require(rsample)
+#' @param modelType string, A, AD or DirDom. A and AD representing model with Additive-only, Add. plus Dominance, respectively. **NEW**: modelType="DirDom" includes a genome-wide homozygosity effect as in Xiang et al. 2016, uses a different dominance GRM and will probably be a little slower.
+#' @param grms list of GRMs where each element is named either A, D, or, AD. Matrices supplied must match required by A, AD and ADE models. For ADE grms=list(A=A,D=D)...
+#' @param blups nested data.frame with list-column "TrainingData" containing BLUPs. Each element of "TrainingData" list, is data.frame with de-regressed BLUPs, BLUPs and weights (WT) for training and test. If byGroup==TRUE, a column with Group as the header uniquely classifying GIDs into genetic groups, is expected.
+runCrossVal<-function(blups,
+                      modelType,
+                      selInd,SIwts = NULL,
+                      grms,dosages=NULL,
+                      nrepeats,nfolds,
+                      ncores=1,nBLASthreads=NULL,
+                      gid="GID",seed=NULL,...){
+
+  # same train-test folds across traits
+  gids<-blups %>%
+    unnest(TrainingData) %>%
+    distinct(!!sym(gid)) %>%
+    .[[gid]]
+
+
+  # whether or not user inputs a master seed
+  # generate and store in output
+  # seeds to make each replicate reproducible.
+  if(!is.null(seed)){
+    set.seed(seed);
+    seeds<-sample(1:1e6,replace = F,size = nrepeats)
+  } else {
+    seeds-sample(1:1e6,replace = F,size = nrepeats) }
+
   # Set-up replicated cross-validation folds
   # splitting by clone (if clone in training dataset, it can't be in testing)
-  if(byGroup){
-    cvsamples<-tibble(GroupName=unique(TrainTestData$Group))
-  } else { cvsamples<-tibble(GroupName="None") }
-  cvsamples<-cvsamples %>%
-    mutate(Splits=map(GroupName,function(GroupName){
-      if(GroupName!="None"){
-        thisgroup<-TrainTestData %>%
-          filter(Group==GroupName) } else { thisgroup<-TrainTestData }
-      out<-tibble(repeats=1:nrepeats,
-                  splits=rerun(nrepeats,group_vfold_cv(thisgroup, group = gid, v = nfolds))) %>%
-        unnest(splits)
-      return(out)
-    })) %>%
-    unnest(Splits)
+  require(rsample)
+  cvsamples<-tibble(repeats=1:nrepeats,
+                    seeds=seeds,
+                    splits=map(seeds,function(seeds,...){
+                      set.seed(seeds);
+                      cvfolds<-vfold_cv(tibble(GID=gids),v = nfolds)
+                      return(cvfolds)})) %>%
+    unnest(splits)
 
+  ## The fitModels() internal function
+  ## Now runs _across_ traits and, if requested,
+  ## computes the selection index accuracy
+  ## runCrossVal() now parallelizes over repeat-folds using ncores
+  ## Traits are handled in serial by each parallel worker
+  ## nBLASthreads controls the number of additional cores each worker
+  ## uses to speed matrix computations
   ## Internal function
   ## fits prediction model and calcs. accuracy for each train-test split
 
-  fitModel<-possibly(function(splits,modelType,augmentTP,TrainTestData,GroupName,grms){
-    starttime<-proc.time()[3]
+  fitModels<-function(splits,modelType,
+                      blups,selInd,SIwts,
+                      gid="GID",
+                      grms,dosages=NULL,
+                      nBLASthreads){
+
+    # internal testing of fitModels() inputs - one rep-fold
+    # splits<-cvsamples$splits[[1]]
+    # rm(splits)
+
+    if(!is.null(nBLASthreads)) { RhpcBLASctl::blas_set_num_threads(nBLASthreads) }
+    # workers in plan(multisession) need this call internal to the function, it seems.
+
+    # subset kinship (and if modelType=="DirDom" also the dosages) matrices
+    ### only lines with BLUPs for cross-validation
+    A<-grms[["A"]][gids,gids]
+    if(modelType %in% c("AD","DirDom")){
+      D<-grms[["D"]][gids,gids]  }
+    if(modelType=="DirDom"){ dosages<-dosages[gids,] }
+
     # Set-up training set
-    trainingdata<-training(splits)
-    ## Make sure, if there is an augmentTP, no GIDs in test-sets
-    if(!is.null(augmentTP)){
-      ## remove any test-set members from augment TP before adding to training data
-      training_augment<-augmentTP %>% filter(!(!!sym(gid) %in% testing(splits)[[gid]]))
-      trainingdata<-bind_rows(trainingdata,training_augment) }
-    if(GroupName!="None"){ trainingdata<-bind_rows(trainingdata,
-                                                   TrainTestData %>%
-                                                     filter(Group!=GroupName,
-                                                            !(!!sym(gid) %in% testing(splits)[[gid]]))) }
-    # Subset kinship matrices
-    traintestgids<-union(trainingdata[[gid]],testing(splits)[[gid]])
-    A1<-grms[["A"]][traintestgids,traintestgids]
-    trainingdata[[paste0(gid,"a")]]<-factor(trainingdata[[gid]],levels=rownames(A1))
-    if(modelType %in% c("AD","ADE")){
-      D1<-grms[["D"]][traintestgids,traintestgids]
-      trainingdata[[paste0(gid,"d")]]<-factor(trainingdata[[gid]],levels=rownames(D1))
-      if(modelType=="ADE"){
-        #AA1<-grms[["AA"]][traintestgids,traintestgids]
-        AD1<-grms[["AD"]][traintestgids,traintestgids]
-        diag(AD1)<-diag(AD1)+1e-06
-        #DD1<-grms[["DD"]][traintestgids,traintestgids]
-        #trainingdata[[paste0(gid,"aa")]]<-factor(trainingdata[[gid]],levels=rownames(AA1))
-        trainingdata[[paste0(gid,"ad")]]<-factor(trainingdata[[gid]],levels=rownames(AD1))
-        #trainingdata[[paste0(gid,"dd")]]<-factor(trainingdata[[gid]],levels=rownames(DD1))
-      }
+    predictions<-blups %>%
+      mutate(modelOut=map(TrainingData,function(TrainingData,...){
+        #TrainingData<-blups$TrainingData[[1]]
+
+        trainingdata<-TrainingData %>%
+          dplyr::rename(GID=!!sym(gid)) %>%
+          filter(GID %in% training(splits)[[gid]],
+                 GID %in% rownames(A))
+
+        trainingdata[[paste0(gid,"a")]]<-factor(trainingdata[["GID"]],
+                                                levels=rownames(A))
+        if(modelType %in% c("AD")){
+          trainingdata[[paste0(gid,"d")]]<-trainingdata[[paste0(gid,"a")]] }
+        if(modelType %in% c("DirDom")){
+          trainingdata[[paste0(gid,"d_star")]]<-trainingdata[[paste0(gid,"a")]] }
+
+        # Set-up random model statements
+        randFormula<-paste0("~vs(",gid,"a,Gu=A)")
+        if(modelType %in% c("AD")){
+          randFormula<-paste0(randFormula,"+vs(",gid,"d,Gu=D)") }
+        if(modelType=="DirDom"){
+          randFormula<-paste0(randFormula,"+vs(",gid,"d_star,Gu=D)")
+          f<-getPropHom(dosages)
+          trainingdata %<>% mutate(f=f[trainingdata$GID]) }
+
+        # Fixed model statements
+        fixedFormula<-ifelse(modelType=="DirDom",
+                             "drgBLUP ~1+f","drgBLUP ~1")
+        # Fit genomic prediction model
+        require(sommer)
+        fit <- sommer::mmer(fixed = as.formula(fixedFormula),
+                            random = as.formula(randFormula),
+                            weights = WT,
+                            data=trainingdata,
+                            date.warning = F,
+                            getPEV = FALSE)
+
+        print(paste0("GBLUP model complete - one trait"))
+        if(modelType=="DirDom"){
+
+          # Backsolve SNP effects
+          # Compute allele sub effects
+          ## Every model has an additive random term
+          ga<-as.matrix(fit$U[[paste0("u:",gid,"a")]]$drgBLUP,ncol=1)
+          M<-centerDosage(dosages)
+
+          # model DirDom is a different add-dom partition,
+          ### add effects are not allele sub effects and gblups are not GEBV
+          addsnpeff<-backsolveSNPeff(Z=M,g=ga)
+          ### dom effects are called d*, gd_star or domstar
+          ### because of the genome-wide homoz. term included in model
+          gd_star<-as.matrix(fit$U[[paste0("u:",gid,"d_star")]]$drgBLUP,ncol=1)
+          domdevMat_genotypic<-dose2domDevGenotypic(dosages)
+          domstar_snpeff<-backsolveSNPeff(Z=domdevMat_genotypic,g=gd_star)
+          ### b = the estimate (BLUE) for the genome-wide homoz. effect
+          b<-fit$Beta[fit$Beta$Effect=="f","Estimate"]
+          ### calc. domsnpeff including the genome-wide homoz. effect
+          ### divide the b effect up by number of SNPs and _subtract_ from domstar
+          domsnpeff<-domstar_snpeff-(b/length(domstar_snpeff))
+
+          ### allele substitution effects using a+d(q-p) where d=d*-b/p
+          p<-getAF(dosages)
+          q<-1-p
+          allelesubsnpeff<-addsnpeff+(domsnpeff*(q-p))
+        }
+
+        # Gather the GBLUPs
+        if(modelType %in% c("A","AD")){
+          gblups<-tibble(GID=as.character(names(fit$U[[paste0("u:",gid,"a")]]$drgBLUP)),
+                         GEBV=as.numeric(fit$U[[paste0("u:",gid,"a")]]$drgBLUP)) }
+        if(modelType=="AD"){
+          gblups %<>% # compute GEDD (genomic-estimated dominance deviation)
+            mutate(GEDD=as.numeric(fit$U[[paste0("u:",gid,"d")]]$drgBLUP),
+                   # compute GETGV
+                   GETGV=rowSums(.[,grepl("GE",colnames(.))])) }
+        if(modelType=="DirDom"){
+          # re-calc the GBLUP, GEdomval using dom. effects where d=d*-b/p
+          ge_domval<-domdevMat_genotypic%*%domsnpeff
+          # calc. the GEBV using allele sub. effects where alpha=a+d(p-q), and d=d*-b/p
+          gebv<-M%*%allelesubsnpeff
+          # Tidy tibble of GBLUPs
+          gblups<-tibble(GID=as.character(names(fit$U[[paste0("u:",gid,"a")]]$drgBLUP)),
+                         GEadd=as.numeric(fit$U[[paste0("u:",gid,"a")]]$drgBLUP),
+                         GEdom_star=as.numeric(fit$U[[paste0("u:",gid,"d_star")]]$drgBLUP)) %>%
+            left_join(tibble(GID=rownames(ge_domval),GEdomval=as.numeric(ge_domval))) %>%
+            left_join(tibble(GID=rownames(gebv),GEBV=as.numeric(gebv))) %>%
+            # GETGV from GEadd + GEdomval
+            mutate(GETGV=GEadd+GEdomval)
+          print(paste0("Backsolving SNP effects for DirDom model compete - one trait"))
+        }
+
+        # this is to remove conflicts with dplyr function select() downstream
+        detach("package:sommer",unload = T); detach("package:MASS",unload = T)
+
+        # free up the memory footprint
+        rm(fit)
+
+        # Calculate accuracy for each trait
+        ## Convert predicted gblups to a long-format
+        gblups %<>%
+          select(GID,any_of(c("GEBV","GETGV"))) %>%
+          pivot_longer(any_of(c("GEBV","GETGV")),
+                       names_to = "predOf",
+                       values_to = "GBLUP")
+
+        ## Grab the test set BLUPs as validation data
+        validationData<-TrainingData %>%
+          dplyr::rename(GID=!!sym(gid)) %>%
+          dplyr::select(GID,BLUP) %>%
+          filter(GID %in% testing(splits)[[gid]])
+
+        # Measure accuracy in test set
+        ## cor(GEBV,BLUP)
+        ## cor(GETGV,BLUP)
+        accuracy<-gblups %>%
+          left_join(validationData) %>%
+          nest(predVSobs=c(GID,GBLUP,BLUP)) %>%
+          mutate(Accuracy=map_dbl(predVSobs,~cor(.$GBLUP,.$BLUP, use = 'complete.obs')))
+        return(accuracy)
+      }))
+    print(paste0("Genomic predictions done for all traits in one repeat-fold"))
+
+    predictions %<>%
+      select(-TrainingData) %>%
+      unnest(modelOut)
+
+    if(selInd){
+      # calc. SELIND and SELIND accuracy
+
+      gblups<-predictions %>%
+        select(-Accuracy) %>%
+        unnest(predVSobs) %>%
+        select(-BLUP) %>%
+        pivot_wider(values_from = "GBLUP",
+                    names_from = "Trait")
+      gblups %<>%
+        mutate(GBLUP=as.numeric((gblups %>%
+                                   select(names(SIwts)) %>%
+                                   as.matrix(.))%*%SIwts)) %>%
+        select(predOf,GID,GBLUP)
+
+      validationData<-blups %>%
+        unnest(TrainingData) %>%
+        select(Trait,GID,BLUP) %>%
+        pivot_wider(names_from = "Trait", values_from = "BLUP")
+      validationData %<>%
+        mutate(BLUP=as.numeric((validationData %>%
+                                  select(names(SIwts)) %>%
+                                  as.matrix(.))%*%SIwts)) %>%
+        select(GID,BLUP)
+
+      predictions %<>%
+        bind_rows(gblups %>%
+                    left_join(validationData) %>%
+                    nest(predVSobs=c(GID,GBLUP,BLUP)) %>%
+                    mutate(Trait="SELIND") %>%
+                    relocate(Trait,.before = 1) %>%
+                    mutate(Accuracy=map_dbl(predVSobs,~cor(.$GBLUP,.$BLUP, use = 'complete.obs'))))
     }
-    # Set-up random model statements
-    randFormula<-paste0("~vs(",gid,"a,Gu=A1)")
-    if(modelType %in% c("AD","ADE")){
-      randFormula<-paste0(randFormula,"+vs(",gid,"d,Gu=D1)")
-      if(modelType=="ADE"){
-        randFormula<-paste0(randFormula,"+vs(",gid,"ad,Gu=AD1)")
-        #"+vs(",gid,"aa,Gu=AA1)",
-        #"+vs(",gid,"ad,Gu=AD1)")
-        #"+vs(",gid,"dd,Gu=DD1)")
-      }
-    }
-    # Fit genomic prediction model
-    fit <- mmer(fixed = drgBLUP ~1,
-                random = as.formula(randFormula),
-                weights = WT,
-                data=trainingdata)
-    # Gather the BLUPs
-    gblups<-tibble(GID=as.character(names(fit$U[[paste0("u:",gid,"a")]]$drgBLUP)),
-                   GEBV=as.numeric(fit$U[[paste0("u:",gid,"a")]]$drgBLUP))
-    if(modelType %in% c("AD","ADE")){
-      gblups %<>% mutate(GEDD=as.numeric(fit$U[[paste0("u:",gid,"d")]]$drgBLUP))
-      if(modelType=="ADE"){
-        gblups %<>% mutate(#GEEDaa=as.numeric(fit$U[[paste0("u:",gid,"aa")]]$drgBLUP),
-          GEEDad=as.numeric(fit$U[[paste0("u:",gid,"ad")]]$drgBLUP))
-        #GEEDdd=as.numeric(fit$U[[paste0("u:",gid,"dd")]]$drgBLUP))
-      }
-    }
-    # Calc GETGVs
-    ## Note that for modelType=="A", GEBV==GETGV
-    gblups %<>%
-      mutate(GETGV=rowSums(.[,grepl("GE",colnames(.))]))
-    # Test set validation data
-    validationData<-TrainTestData %>%
-      dplyr::select(gid,BLUP) %>%
-      filter(GID %in% testing(splits)[[gid]])
-    # Measure accuracy in test set
-    ## cor(GEBV,BLUP)
-    ## cor(GETGV,BLUP)
-    accuracy<-gblups %>%
-      mutate(GETGV=rowSums(.[,grepl("GE",colnames(.))])) %>%
-      filter(GID %in% testing(splits)[[gid]]) %>%
-      left_join(validationData) %>%
-      summarize(accGEBV=cor(GEBV,BLUP, use = 'complete.obs'),
-                accGETGV=cor(GETGV,BLUP, use = 'complete.obs'))
-    computeTime<-proc.time()[3]-starttime
-    accuracy %<>% mutate(computeTime=computeTime)
-    return(accuracy)
-  },otherwise = NA)
-  ## Run models across all train-test splits
-  ## Parallelize
+
+    predictions %<>%
+      mutate(NcompleteTestPairs=map_dbl(predVSobs,~na.omit(.) %>% nrow(.)))
+
+    return(predictions)
+
+  }
   require(furrr); plan(multisession, workers = ncores)
   options(future.globals.maxSize=+Inf); options(future.rng.onMisuse="ignore")
-
-  cvsamples<-cvsamples %>%
-    mutate(accuracy=future_map2(splits,GroupName,
-                                ~fitModel(splits=.x,GroupName=.y,
-                                          modelType=modelType,augmentTP=NULL,TrainTestData=TrainTestData,grms=grms),
-                                .progress = FALSE)) %>%
-    unnest(accuracy)
+  # quick test
+  #cvsamples %<>% slice(1:2)
+  cvsamples %<>%
+    mutate(accuracyEstOut=future_map(splits,
+                                     ~fitModels(splits=.,modelType=modelType,
+                                                blups=blups,
+                                                selInd=selInd,SIwts=SIwts,
+                                                gid=gid,grms=grms,dosages=dosages,
+                                                nBLASthreads=nBLASthreads)))
   plan(sequential)
   return(cvsamples)
 }
@@ -500,11 +629,11 @@ runGenomicPredictions<-function(modelType,
       trainingdata %<>% mutate(f=f[trainingdata$gid]) }
 
     # Fixed model statements
-    fixedFomula<-ifelse(modelType=="DirDom",
+    fixedFormula<-ifelse(modelType=="DirDom",
                         "drgBLUP ~1+f","drgBLUP ~1")
     # Fit genomic prediction model
     require(sommer)
-    fit <- sommer::mmer(fixed = as.formula(fixedFomula),
+    fit <- sommer::mmer(fixed = as.formula(fixedFormula),
                         random = as.formula(randFormula),
                         weights = WT,
                         data=trainingdata,
@@ -636,7 +765,7 @@ runGenomicPredictions<-function(modelType,
                                                grms=grms,
                                                dosages=dosages,
                                                nBLASthreads=nBLASthreads)))
-  plna(sequential)
+  plan(sequential)
 
   predictions %<>%
     select(-TrainingData) %>%
