@@ -335,7 +335,7 @@ $(document).ready(function () {
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2021-07-29
+<strong>Last updated:</strong> 2021-08-02
 </p>
 <p>
 <strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 2 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 0
@@ -366,16 +366,16 @@ This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomwolfemdimplementGMSinCassavatreebc85a7d8a05ad57547715fd8d727fb1e9b7261aetargetblankbc85a7da"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/wolfemd/implementGMSinCassava/tree/bc85a7d8a05ad57547715fd8d727fb1e9b7261ae" target="_blank">bc85a7d</a> </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomwolfemdimplementGMSinCassavatree511236f49d0f700cd33eee34fd394c3cb5e90b22targetblank511236fa"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/wolfemd/implementGMSinCassava/tree/511236f49d0f700cd33eee34fd394c3cb5e90b22" target="_blank">511236f</a> </a>
 </p>
 </div>
-<div id="strongRepositoryversionstrongahrefhttpsgithubcomwolfemdimplementGMSinCassavatreebc85a7d8a05ad57547715fd8d727fb1e9b7261aetargetblankbc85a7da" class="panel-collapse collapse">
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomwolfemdimplementGMSinCassavatree511236f49d0f700cd33eee34fd394c3cb5e90b22targetblank511236fa" class="panel-collapse collapse">
 <div class="panel-body">
 <p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility.
 </p>
 <p>
-The results in this page were generated with repository version <a href="https://github.com/wolfemd/implementGMSinCassava/tree/bc85a7d8a05ad57547715fd8d727fb1e9b7261ae" target="_blank">bc85a7d</a>. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
+The results in this page were generated with repository version <a href="https://github.com/wolfemd/implementGMSinCassava/tree/511236f49d0f700cd33eee34fd394c3cb5e90b22" target="_blank">511236f</a>. See the <em>Past versions</em> tab to see a history of the changes made to the R Markdown and HTML files.
 </p>
 <p>
 Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
@@ -490,6 +490,8 @@ Untracked files:
     Untracked:  output/samples2keep_IITA_MAFpt01_prune50_25_pt98.prune.in
     Untracked:  output/samples2keep_IITA_MAFpt01_prune50_25_pt98.prune.out
     Untracked:  output/samples2keep_notInPHGdb.txt
+    Untracked:  output/stdcv_AD_predAccuracy.rds
+    Untracked:  output/stdcv_DirDom_predAccuracy.rds
     Untracked:  output/test_cvAD_markerEffects.rds
     Untracked:  output/test_cvAD_meanPredAccuracy.rds
     Untracked:  output/test_cvAD_parentfolds.rds
@@ -537,6 +539,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/wolfemd/implementGMSinCassava/blob/5e7bc99fde567419c2dcf63bb97b8da878288173/analysis/index.Rmd" target="_blank">5e7bc99</a>
+</td>
+<td>
+wolfemd
+</td>
+<td>
+2021-08-02
+</td>
+<td>
+Results now include both “standard” and parent-wise cross-validation accuracies and plots of cross mean/variance predictions. Ready to knit and publish + push to FTP.
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/wolfemd/implementGMSinCassava/769fe811f6ceb34a907efed3f6d9a110ccbc7d03/docs/index.html" target="_blank">769fe81</a>
+</td>
+<td>
+wolfemd
+</td>
+<td>
+2021-07-29
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -733,14 +769,14 @@ Start workflowr project.
 </div>
 <p>We saw in <a href="https://www.biorxiv.org/content/10.1101/2021.01.05.425443v1">an initial study</a>, promising results regarding the prediction of genetic variance in cassava crosses. In that study, we used a high-quality validated pedigree-based phasing pipeline for the marker data. That pipeline is considerably more involved and may not be implementable on the entire breeding germplasm.</p>
 <p>In this project, I am integrating cross-variance predictions into our current genomics-enabled breeding pipeline leveraging available data. I conduct additional tests to assess whether current Beagle imputed-and-phased data and a basic pedigree-validation step are sufficient.</p>
-<p>This project should form the template for genomic mate selection in NextGen Cassava.</p>
+<p>This project forms the template for genomic mate selection in NextGen Cassava.</p>
 <p><a href="07-Results.html"><strong>See the Results here!</strong></a></p>
 <p>We will soon implement in <a href="https://wolfemd.github.io/IITA_2021GS/">summer 2021 for planning fall crossing nurseries and with new GS C5 DArTseqLD data</a>.</p>
 <div id="whats-new" class="section level1">
 <h1>What’s new?</h1>
 <ol style="list-style-type: decimal">
 <li><p>Functions previously used in NextGen GS pipeline (<code>code/gsFunctions.R</code>) migrate to and receive an upgrade (<code>code/gmsFunctions.R</code>) to support genomic mate selection. The <code>runGenomicPredictions()</code> function fits genomic mixed-models and produces GEBV/GETGV for existing germplasm as it did previously, but now also returns marker effects and provides a direct input to the new <code>predictCrosses()</code> function, which handles predicting mate selection criteria.</p></li>
-<li><p>Support for a directional dominance model to incorporate genome-wide homozygosity-effects (inbreeding) into predictions.</p></li>
+<li><p>Support for a directional dominance model (<code>modelType="DirDom"</code>) to incorporate genome-wide homozygosity-effects (inbreeding) into predictions.</p></li>
 <li><p>Support for selection indices.</p></li>
 <li><p>Improved version of <strong>predCrossVar</strong> functions at <code>code/predCrossVar.R</code></p>
 <ul>
@@ -748,6 +784,7 @@ Start workflowr project.
 <li>faster unless you want to use the Bayesian approach.</li>
 </ul></li>
 <li><p>Creation of a single-function interface to accomplish parent-wise cross-validation at <code>code/parentWiseCrossVal.R</code>. Provides estimates of (selection index) accuracy predicting family means and variances.</p></li>
+<li><p>Upgraded the “standard” cross-validation function (<code>runCrossVal()</code>), used in previous genomic selection analyses (<em>e.g.</em> <a href="https://wolfemd.github.io/IITA_2020GS/06-Results.html#cross-validation-accuracy">IITA_2020GS CV</a>, <a href="https://wolfemd.github.io/NRCRI_2021GS/05-Results.html#Prediction_accuracy">NRCRI_2021GS CV</a>, <a href="https://wolfemd.github.io/TARI_2020GS/05-Results.html#Prediction_accuracy">TARI_2020GS CV</a>), to measure selection index accuracy (via <code>selInd=</code> and <code>SIwts=</code> arguments) and added a <code>modelType="DirDom"</code> option.</p></li>
 </ol>
 </div>
 <div id="analysis-steps" class="section level1">
