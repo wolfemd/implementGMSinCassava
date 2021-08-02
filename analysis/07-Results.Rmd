@@ -14,9 +14,15 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
                       tidy='styler', tidy.opts=list(strict=FALSE,width.cutoff=100), highlight=TRUE)
 ```
 
-The summaries below correspond to the results of [analyses outlined here](https://wolfemd.github.io/implementGMSinCassava/#Analysis-steps) and linked above.
+The summaries below correspond to the results of [analyses outlined here](https://wolfemd.github.io/implementGMSinCassava/#Analysis-steps) and linked in the navbar above.
 
-# Raw data
+1.  [Preliminary summaries] of the population, the data, results of pedigree validation,
+2.  [Prediction accuracy estimates]
+3.  [Genomic Predictions] and [Genomic mate selection].
+
+# Preliminary summaries
+
+## Raw data
 
 Summary of the number of unique plots, locations, years, etc. in the cleaned plot-basis data (`output/IITA_ExptDesignsDetected_2021May10.rds`, [download from FTP](ftp://ftp.cassavabase.org/marnin_datasets/implementGMSinCassava/output/IITA_ExptDesignsDetected_2021May10.rds)). See [the data cleaning step here](01-cleanTPdata.html) for details.
 
@@ -78,7 +84,7 @@ genotypedAndPhenotypedClones %>%
   rmarkdown::paged_table()
 ```
 
-# BLUPs
+## BLUPs
 
 Summarize the BLUPs from the training data, leveraging for each clone data across trials/locations *without* genomic information and to be used as input for genomic prediction downstream (`data/blups_forCrossVal.rds`, [download from FTP](ftp://ftp.cassavabase.org/marnin_datasets/implementGMSinCassava/data/blups_forCrossVal.rds)). See [the mixed-model analysis step here](02-GetBLUPs.html) and a [subsequent processing step here](04-PreprocessDataFiles.html) for details.
 
@@ -131,7 +137,7 @@ blups %>%
   labs(title = "Distribution of BLUP Reliabilities")
 ```
 
-# Marker density and distribution
+## Marker density and distribution
 
 Summarize the marker data (`data/dosages_IITA_filtered_2021May13.rds`, [download from FTP](ftp://ftp.cassavabase.org/marnin_datasets/implementGMSinCassava/data/dosages_IITA_filtered_2021May13.rds)). See the [pre-processing steps here](04-PreprocessDataFiles.html).
 
@@ -158,7 +164,7 @@ In total, `r nrow(mrks)` SNPs genome-wide. Broken down by chromosome:
 mrks %>% count(Chr,name = "Nsnps") %>% rmarkdown::paged_table()
 ```
 
-# Pedigree validation
+## Pedigree validation
 
 Introduced new downstream procedures ([the parent-wise cross-validation](05-CrossValidation.html), which rely on a trusted pedigree. To support this, introduced a [new pedigree-validation step](03-validatePedigree.html). The pedigree and validation results are summarized below.
 
@@ -253,9 +259,9 @@ ped %>%
 
 730 families. Mean size 5.85, range 1-77.
 
-# Parent-wise Cross-validation
+# Prediction accuracy estimates
 
-I have introduced a new procedure to assess the accuracy of genomic predictions of cross means and variances on a selection index, which is called ([parent-wise cross-validation](05-CrossValidation.html). The actual parent-wise cross-validation folds (`output/parentfolds.rds`) used are summarized below and can be downloaded [here](ftp://ftp.cassavabase.org/marnin_datasets/implementGMSinCassava/output/parentfolds.rds)).
+I have used two procedures to measure prediction accuracies-of-interested. First, a brand new procedure to assess the accuracy of genomic predictions of cross means and variances, which is called ([parent-wise cross-validation](05-CrossValidation.html). The actual parent-wise cross-validation folds (`output/parentfolds.rds`) used are summarized below and can be downloaded [here](ftp://ftp.cassavabase.org/marnin_datasets/implementGMSinCassava/output/parentfolds.rds)). Second, I also ran the standard 5 reps of 5-fold cross-validation, which measures the accuracy of predicting individual performance. Both cross-validation types now implement two new features: (1) estimation of **selection index** prediction accuracy, (2) a directional-dominance model (**DirDom**) in addition to the "standard" additive-plus-dominance (**AD**) model.
 
 ```{r}
 parentfolds<-readRDS(file=here::here("output","parentfolds.rds"))
@@ -289,10 +295,11 @@ c(logFYLD=20,
   PLTHT=10)
 ```
 
-## Selection index accuracy
+## Plot SELIND prediction accuracy
 
 ```{r}
 library(ggdist)
+# PARENT-WISE CV RESULTS
 accuracy_ad<-readRDS(here::here("output","cvAD_5rep5fold_predAccuracy.rds"))
 accuracy_dirdom<-readRDS(here::here("output","cvDirDom_5rep5fold_predAccuracy.rds"))
 accuracy<-accuracy_ad$meanPredAccuracy %>% 
@@ -309,23 +316,49 @@ accuracy<-accuracy_ad$meanPredAccuracy %>%
                      predOf="Var")) %>% 
   select(-predVSobs)
 
+# STANDARD CV RESULTS
+stdcv_ad<-readRDS(here::here("output","stdcv_AD_predAccuracy.rds"))
+stdcv_dirdom<-readRDS(here::here("output","stdcv_DirDom_predAccuracy.rds"))
+
+accuracy<-stdcv_ad %>% 
+  unnest(accuracyEstOut) %>% 
+  select(-splits,-predVSobs,-seeds) %>% 
+  filter(Trait=="SELIND") %>% 
+  rename(Repeat=repeats,Fold=id,VarComp=predOf,AccuracyEst=Accuracy) %>% 
+  mutate(Repeat=paste0("Repeat",Repeat),
+         VarComp=gsub("GE","",VarComp),
+         predOf="IndivPerformance",
+         modelType="AD") %>% 
+  bind_rows(stdcv_dirdom %>% 
+  unnest(accuracyEstOut) %>% 
+  select(-splits,-predVSobs,-seeds) %>% 
+  filter(Trait=="SELIND") %>% 
+  rename(Repeat=repeats,Fold=id,VarComp=predOf,AccuracyEst=Accuracy) %>% 
+  mutate(Repeat=paste0("Repeat",Repeat),
+         VarComp=gsub("GE","",VarComp),
+         predOf="IndivPerformance",
+         modelType="DirDom")) %>% 
+  bind_rows(accuracy %>% 
+              mutate(predOf=paste0("Cross",predOf))) %>% 
+  mutate(predOf=factor(predOf,levels=c("IndivPerformance","CrossMean","CrossVar")),
+         VarComp=factor(VarComp,levels=c("BV","TGV")))
+
 colors<-viridis::viridis(4)[1:2]
 ```
 
-The figure below shows the ultimate summary of the cross-validation, the estimated accuracy predicting cross-means and cross-variances on the **selection index**. See further below for a break down by trait. Two models were tested and are compared: modelType=**AD** and modelType=**DirDom**. The y-axis "AccuracyEst" is the family-size weighted correlation between the predicted and observed cross means and variances. Predictions of breeding value (**BV**) and total genetic value (**TGV**) are distinguished in all plots and relate to the value of a cross for producing future parents and/or elite varieties, respectively among their offspring. Predictions of **BV** use only allele substitution effects ($\alpha$). Predictions of **TGV** incorporate dominance effects/variance.
+The figure below shows the ultimate summary of all cross-validation, the estimated accuracy predicting individual performance (clone means), cross-means and cross-variances on the **selection index**. Results from 5 repeats of 5-fold clone-wise ("standard") and parent-wise ("NEW") cross-validation are combined in this plot. See further below for a break down by trait. Two models were tested and are compared: modelType=**AD** and modelType=**DirDom**. For the "CrossMean" and "CrossVar" panels, the y-axis "AccuracyEst" is the family-size weighted correlation between the predicted and observed cross means and variances. For the "IndivPerformance" panels, the y-axis is an un-weighted correlation between GBLUPs (*i.e.* **GEBV/GETGV**) and phenotypic (*i.e.* non-genomic or *i.i.d.* **BLUPs**). Predictions of breeding value (**BV**) and total genetic value (**TGV**) are distinguished in all plots and relate to the value of a cross for producing future parents and/or elite varieties, respectively among their offspring. Predictions of **BV** use only allele substitution effects ($\alpha$). Predictions of **TGV** incorporate dominance effects/variance.
 
 ```{r}
 accuracy %>% 
-  mutate(predOf=factor(predOf,levels=c("Mean","Var")),
-         VarComp=factor(VarComp,levels=c("BV","TGV"))) %>% 
   ggplot(.,aes(x=VarComp,y=AccuracyEst,fill=VarComp)) +
   ggdist::stat_halfeye(adjust=0.5,.width = 0,fill='gray',width=0.75) +  
   geom_boxplot(width=0.12,notch = TRUE) +
-  ggdist::stat_dots(side = "left",justification = 1.1,
-                    binwidth = 0.03,dotsize=0.6) +
+  ggdist::stat_dots(side = "left",justification = 1.1,dotsize=0.6)+#,binwidth = 0.03,dotsize=0.6) +
+  #theme_ggdist() + 
   theme_bw() + 
   scale_fill_manual(values = colors) + 
-  geom_hline(yintercept = 0, color='black', size=0.9) +
+  geom_hline(data = accuracy %>% distinct(predOf) %>% mutate(yint=c(NA,NA,0)), 
+             aes(yintercept = yint), color='black', size=0.9) +
   theme(axis.text.x = element_blank(),
         axis.title.x = element_blank(),
         strip.background = element_blank(),
@@ -337,9 +370,9 @@ accuracy %>%
         legend.text = element_text(face='bold'),
         legend.position = 'bottom') +
   facet_grid(predOf~modelType,scales = 'free') + 
-  #facet_wrap(~predOf+modelType,scales = 'free_y',nrow=1) + 
-  labs(title="Selection Index Prediction Accuracy") + 
-  coord_cartesian(xlim = c(1.2, NA))
+  labs(title="Accuracy predicting performance on the Selection Index",
+       subtitle="Predictions of clone performance + the mean and variance in cross performnace") 
+  # + coord_cartesian(xlim = c(1.05, NA))
 ```
 
 The **DirDom** model is at least as good, if not better than **AD**. Suggest proceeding to consider only **DirDom** model genomic predictions.
@@ -348,23 +381,31 @@ Prediction accuracy estimates are in `output/` ([here](ftp://ftp.cassavabase.org
 
 For details on the cross-validation scheme, [see the article](https://www.biorxiv.org/content/10.1101/2021.01.05.425443v1) (and for even more, the [corresponding supplemental documentation here](https://wolfemd.github.io/PredictOutbredCrossVar/)).
 
-## Cross-mean prediction accuracy
+## Plots with breakdowns by traits
+
+### Standard cross-validation
+
+Results, broken down by trait, for the "standard" 5 repeats of 5-fold cross-validation on the accuracy predicting individual-level performance. Contrast to the cross-mean and cross-variance predictions newly implemented and plotted further below.
 
 ```{r,fig.width = 8.5, fig.height=4, warning=F,message=FALSE}
-accuracy_ad$meanPredAccuracy %>% 
-  bind_rows(accuracy_dirdom$meanPredAccuracy) %>% 
-  select(-predVSobs) %>% 
+stdcv_ad %>% 
+  unnest(accuracyEstOut) %>% 
+  select(-splits,-predVSobs,-seeds) %>% 
+  mutate(modelType="AD") %>% 
+  bind_rows(stdcv_dirdom %>% 
+              unnest(accuracyEstOut) %>% 
+              select(-splits,-predVSobs,-seeds) %>% 
+              mutate(modelType="DirDom")) %>% 
   mutate(Trait=factor(Trait,levels=c("SELIND",blups$Trait)),
-         predOf=factor(paste0(predOf,"_",modelType),levels=c("MeanBV_AD","MeanTGV_AD","MeanBV_DirDom","MeanTGV_DirDom"))) %>% 
-  ggplot(.,aes(x=predOf,y=AccuracyEst,fill=predOf,color=modelType)) + 
+         predOf=factor(paste0(predOf,"_",modelType),levels=c("GEBV_AD","GETGV_AD","GEBV_DirDom","GETGV_DirDom"))) %>% 
+  ggplot(.,aes(x=predOf,y=Accuracy,fill=predOf,color=modelType)) + 
   geom_boxplot(notch = TRUE, color='gray40') +
-  # ggdist::stat_dots(side = "left", justification = 1.3,
-  #                   binwidth = 0.03,dotsize=0.5,layout="swarm") +
   scale_fill_manual(values = viridis::viridis(4)[1:4]) + 
   scale_color_manual(values = viridis::viridis(4)[1:4]) + 
-  geom_hline(yintercept = 0, color='black', size=0.8) +
+  #geom_hline(yintercept = 0, color='black', size=0.8) +
   facet_grid(.~Trait) + 
-  labs(title="Accuracy predicting cross-means") + 
+  labs(title="Accuracy predicting the performance of untested clones",
+       subtitle="Standard 5-fold cross-validation") + 
   theme_bw() + 
   theme(axis.text.x = element_blank(),
         axis.title.x = element_blank(),
@@ -379,17 +420,43 @@ accuracy_ad$meanPredAccuracy %>%
         legend.title = element_text(face='bold'),
         legend.text = element_text(face='bold'),
         panel.spacing = unit(0.2, "lines"))
-        # axis.text.y = element_text(face='bold',size=18),
-        # axis.title.y = element_text(face='bold',size=18),
-        # strip.text.x = element_text(face='bold', size=20),
-        # plot.title = element_text(face='bold', size=24),
-        # legend.title = element_text(face='bold', size=20),
-        # legend.text = element_text(face='bold', size=20),
 ```
 
-## Cross variance param prediction accruacy
+### Parent-wise cross-validation
 
-### Cross variance pred. accuracy
+#### Cross-mean prediction accuracy
+
+```{r,fig.width = 8.5, fig.height=4, warning=F,message=FALSE}
+accuracy_ad$meanPredAccuracy %>% 
+  bind_rows(accuracy_dirdom$meanPredAccuracy) %>% 
+  select(-predVSobs) %>% 
+  mutate(Trait=factor(Trait,levels=c("SELIND",blups$Trait)),
+         predOf=factor(paste0(predOf,"_",modelType),levels=c("MeanBV_AD","MeanTGV_AD","MeanBV_DirDom","MeanTGV_DirDom"))) %>% 
+  ggplot(.,aes(x=predOf,y=AccuracyEst,fill=predOf,color=modelType)) + 
+  geom_boxplot(notch = TRUE, color='gray40') +
+  scale_fill_manual(values = viridis::viridis(4)[1:4]) + 
+  scale_color_manual(values = viridis::viridis(4)[1:4]) + 
+  geom_hline(yintercept = 0, color='black', size=0.8) +
+  facet_grid(.~Trait) + 
+  labs(title="Accuracy predicting the mean performance of offspring from untested crosses",
+       subtitle="5-fold 'parent-wise' cross-validation") + 
+  theme_bw() + 
+  theme(axis.text.x = element_blank(),
+        axis.title.x = element_blank(),
+        strip.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position='bottom',
+        axis.text.y = element_text(face='bold'),
+        axis.title.y = element_text(face='bold'),
+        strip.text.x = element_text(face='bold'),
+        plot.title = element_text(face='bold'),
+        legend.title = element_text(face='bold'),
+        legend.text = element_text(face='bold'),
+        panel.spacing = unit(0.2, "lines"))
+```
+
+#### Cross-variance pred. accuracy
 
 ```{r,fig.width = 10, fig.height=5}
 accuracy_ad$varPredAccuracy %>% 
@@ -402,13 +469,12 @@ accuracy_ad$varPredAccuracy %>%
                                 "VarBV_DirDom","VarTGV_DirDom"))) %>% 
   ggplot(.,aes(x=predOf,y=AccuracyEst,fill=predOf,color=modelType)) + 
   geom_boxplot(notch = TRUE,color='gray40') +
-  # ggdist::stat_dots(side = "left", justification = 1.3,layout='swarm',
-  #                   binwidth = 0.03,dotsize=0.4) +
   scale_fill_manual(values = viridis::viridis(4)[1:4]) + 
   scale_color_manual(values = viridis::viridis(4)[1:4]) + 
   geom_hline(yintercept = 0, color='black', size=0.8) +
   facet_grid(.~Trait1) + 
-  labs(title="Accuracy predicting cross-variances") + 
+  labs(title="Accuracy predicting variance in performance among offspring of untested crosses",
+       subtitle="5-fold 'parent-wise' cross-validation") + 
   theme_bw() + 
   theme(axis.text.x = element_blank(),
         axis.title.x = element_blank(),
@@ -423,15 +489,9 @@ accuracy_ad$varPredAccuracy %>%
         legend.title = element_text(face='bold'),
         legend.text = element_text(face='bold'),
         panel.spacing = unit(0.2, "lines"))
-        # axis.text.y = element_text(face='bold',size=18),
-        # axis.title.y = element_text(face='bold',size=18),
-        # strip.text.x = element_text(face='bold', size=20),
-        # plot.title = element_text(face='bold', size=24),
-        # legend.title = element_text(face='bold', size=20),
-        # legend.text = element_text(face='bold', size=20),
 ```
 
-### Cross co-variance pred. accuracy
+#### Cross-co-variance pred. accuracy
 
 ```{r, fig.width = 9, fig.height = 9}
 accuracy_ad$varPredAccuracy %>% 
@@ -439,9 +499,7 @@ accuracy_ad$varPredAccuracy %>%
   select(-predVSobs) %>% 
   filter(Trait1!="SELIND",Trait2!="SELIND",
          Trait1!=Trait2) %>% 
-  mutate(#Trait1=factor(Trait1,levels=c("SELIND",blups$Trait)),
-         #Trait2=factor(Trait2,levels=c("SELIND",blups$Trait)),
-         Trait1=factor(Trait1,levels=c(blups$Trait)),
+  mutate(Trait1=factor(Trait1,levels=c(blups$Trait)),
          Trait2=factor(Trait2,levels=c(blups$Trait)),
          predOf=factor(paste0(predOf,"_",modelType),
                        levels=c("VarBV_AD","VarTGV_AD",
@@ -452,8 +510,9 @@ accuracy_ad$varPredAccuracy %>%
   scale_color_manual(values = viridis::viridis(4)[1:4]) + 
   geom_hline(yintercept = 0, color='gray40', size=0.6) +
   facet_wrap(~Trait1+Trait2,nrow=5) + 
-  labs(title="Accuracy predicting cross-covariances") + 
-  theme_bw() + 
+  labs(title="Accuracy predicting covariance in trait-trait performance within previously untested families",
+       subtitle="5-fold 'parent-wise' cross-validation") + 
+theme_bw() + 
   theme(axis.text.x = element_blank(),
         axis.title.x = element_blank(),
         strip.background = element_blank(),
@@ -679,9 +738,9 @@ Suppose we choose to create 50 families of 50 siblings each, from the the `r nro
 
 ***Quick digression:*** The input file has a pre-computed `predUsefulness` variable. I used `stdSelInt=2.67` when making the predictions with the `predictCrosses()` function, but that corresponds to selecting the top 1% of each family. For a family of 50, the top 1% means only a single clone per family. In retrospect, I have decided to re-compute the `predUsefulness` targeting selection of the top 5% (or top 5 offspring) from each family. This corresponds to using `stdSelInt =` `r stdSelInt` and a selection threshold std. deviation of `r qnorm(0.95)`.
 
-Crosses may be of interest for their predicted $UC_{parent}$ (`predOf=="BV"`) and/or $UC_{variety}$ (`predOf=="TGV"`). 
+Crosses may be of interest for their predicted $UC_{parent}$ (`predOf=="BV"`) and/or $UC_{variety}$ (`predOf=="TGV"`).
 
-Each crossing nursery needs to produce both new exceptional parents _and_ elite candidate cultivars. These will not necessarily be the same individuals or come from the same crosses.
+Each crossing nursery needs to produce both new exceptional parents *and* elite candidate cultivars. These will not necessarily be the same individuals or come from the same crosses.
 
 ```{r}
 # forplot %>% 
@@ -699,9 +758,9 @@ Each crossing nursery needs to produce both new exceptional parents _and_ elite 
 # Also, the exact same 50 are ranked top predUC
 ```
 
-In this case, the same 50 crosses are best for both $UC_{parent}$ (`predOf=="BV"`) and $UC_{variety}$ (`predOf=="TGV"`). 
+In this case, the same 50 crosses are best for both $UC_{parent}$ (`predOf=="BV"`) and $UC_{variety}$ (`predOf=="TGV"`).
 
-First, display the entire set of predicted crosses, ranked by their selection index $UC_{variety}$. This will be more clear in the next plots with fewer families: the x-axis is simply the descending rank of predicted $UC_{variety}$ for each cross. The y-axis shows the mean (dot) and distribution quantiles (linerange) based on the predicted mean and standard deviation of each cross. Crosses are color coded according to the "genetic group" of the parents.
+First, display the entire set of predicted crosses, ranked by their selection index $UC^{SI}_{variety}$. This will be more clear in the next plots with fewer families: the x-axis is simply the descending rank of predicted $UC^{SI}_{variety}$ for each cross. The y-axis shows the predicted mean (dot) and distribution quantiles (linerange) based on the predicted mean and standard deviation of each cross. Crosses are color coded according to the "genetic group" of the parents.
 
 ```{r, fig.width=10}
 forplot %>% 
@@ -723,6 +782,7 @@ forplot %>%
 ```
 
 Next, sub
+
 ```{r}
 forplot %>% 
   filter(predOf=="TGV") %>% 
@@ -750,7 +810,7 @@ forplot %>%
   slice_max(order_by = predUsefulness, n = 5) %>% rmarkdown::paged_table()
 ```
 
-Interestingly (?) no cross of C4 (TMS18) clones are yet recommended (in the top 50) on this ranking. The highest rank C4 cross is the 214th from top (see below) along with two other TMS18 x TMS15 crosses. 
+Interestingly (?) no cross of C4 (TMS18) clones are yet recommended (in the top 50) on this ranking. The highest rank C4 cross is the 214th from top (see below) along with two other TMS18 x TMS15 crosses.
 
 ```{r}
 forplot %>% 
@@ -760,7 +820,9 @@ forplot %>%
   filter(grepl("C4",CrossGroup)) %>% slice(1:10) %>% 
   rmarkdown::paged_table()
 ```
-In this last plot, the area under the top 5% of each crosses predicted distribution is highlighted. The mean of individuals from under the highlighted area is the $UC_{variety}$. There are also 50 dots for each cross illustrating the hypothetical outcome of creating 50 progeny. 
+
+In this last plot, the area under the top 5% of each crosses predicted distribution is highlighted. The mean of individuals from under the highlighted area is the $UC_{variety}$. There are also 50 dots for each cross illustrating the hypothetical outcome of creating 50 progeny.
+
 ```{r, fig.width=12}
 forplot %>% 
   filter(predOf=="TGV") %>% 
@@ -783,6 +845,7 @@ forplot %>%
        y = "Selection Index GETGV",
        title = "Predicted distribution of the top 50 crosses")
 ```
+
 Or for more clarity, just the top 5 crosses:
 
 ```{r, fig.width=10}
@@ -809,11 +872,10 @@ forplot %>%
        title = "Predicted distribution of the top 5 crosses")
 ```
 
-**Table of Top 50 Crosses:** 2 rows for each cross, one for `predOf=="BV"` one for `predOf=="TGV"`. 
+**Table of Top 50 Crosses:** 2 rows for each cross, one for `predOf=="BV"` one for `predOf=="TGV"`.
 
--   [**Download the CSV for the top 50 crosses and their selection index means, SDs and UC  here**](ftp://ftp.cassavabase.org/marnin_datasets/implementGMSinCassava/output/top50crosses.csv) or 
+-   [**Download the CSV for the top 50 crosses and their selection index means, SDs and UC here**](ftp://ftp.cassavabase.org/marnin_datasets/implementGMSinCassava/output/top50crosses.csv) or
 -   [**Download the complete CSV of ALL genomic mate predictions here**](ftp://ftp.cassavabase.org/marnin_datasets/implementGMSinCassava/output/genomicMatePredictions_top121parents_ModelDirDom.csv): for all crosses and both SELIND and component trait predictions.
-
 
 ```{r}
 top50crosses<-forplot %>% 

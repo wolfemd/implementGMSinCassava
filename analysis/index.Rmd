@@ -12,7 +12,7 @@ We saw in [an initial study](https://www.biorxiv.org/content/10.1101/2021.01.05.
 
 In this project, I am integrating cross-variance predictions into our current genomics-enabled breeding pipeline leveraging available data. I conduct additional tests to assess whether current Beagle imputed-and-phased data and a basic pedigree-validation step are sufficient.
 
-This project should form the template for genomic mate selection in NextGen Cassava.
+This project forms the template for genomic mate selection in NextGen Cassava.
 
 [**See the Results here!**](07-Results.html)
 
@@ -22,7 +22,7 @@ We will soon implement in [summer 2021 for planning fall crossing nurseries and 
 
 1.  Functions previously used in NextGen GS pipeline (`code/gsFunctions.R`) migrate to and receive an upgrade (`code/gmsFunctions.R`) to support genomic mate selection. The `runGenomicPredictions()` function fits genomic mixed-models and produces GEBV/GETGV for existing germplasm as it did previously, but now also returns marker effects and provides a direct input to the new `predictCrosses()` function, which handles predicting mate selection criteria.
 
-2.  Support for a directional dominance model to incorporate genome-wide homozygosity-effects (inbreeding) into predictions.
+2.  Support for a directional dominance model (`modelType="DirDom"`) to incorporate genome-wide homozygosity-effects (inbreeding) into predictions.
 
 3.  Support for selection indices.
 
@@ -32,6 +32,8 @@ We will soon implement in [summer 2021 for planning fall crossing nurseries and 
     -   faster unless you want to use the Bayesian approach.
 
 5.  Creation of a single-function interface to accomplish parent-wise cross-validation at `code/parentWiseCrossVal.R`. Provides estimates of (selection index) accuracy predicting family means and variances.
+
+6.  Upgraded the "standard" cross-validation function (`runCrossVal()`), used in previous genomic selection analyses (_e.g._ [IITA_2020GS CV](https://wolfemd.github.io/IITA_2020GS/06-Results.html#cross-validation-accuracy), [NRCRI_2021GS CV](https://wolfemd.github.io/NRCRI_2021GS/05-Results.html#Prediction_accuracy), [TARI_2020GS CV](https://wolfemd.github.io/TARI_2020GS/05-Results.html#Prediction_accuracy)), to measure selection index accuracy (via `selInd=` and `SIwts=` arguments) and added a `modelType="DirDom"` option.
 
 # Analysis steps
 
