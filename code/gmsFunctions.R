@@ -349,12 +349,13 @@ runCrossVal<-function(blups,
                       ncores=1,nBLASthreads=NULL,
                       gid="GID",seed=NULL,...){
 
+  # SET-UP CROSS-VALIDATION TRAINING-TEST FOLDS
+
   # same train-test folds across traits
   gids<-blups %>%
     unnest(TrainingData) %>%
     distinct(!!sym(gid)) %>%
     .[[gid]]
-
 
   # whether or not user inputs a master seed
   # generate and store in output
@@ -376,6 +377,8 @@ runCrossVal<-function(blups,
                       return(cvfolds)})) %>%
     unnest(splits)
 
+  # FIT GENOMIC PREDICTION MODELS
+
   ## The fitModels() internal function
   ## Now runs _across_ traits and, if requested,
   ## computes the selection index accuracy
@@ -386,12 +389,12 @@ runCrossVal<-function(blups,
   ## Internal function
   ## fits prediction model and calcs. accuracy for each train-test split
 
-  fitModels<-function(splits,modelType,
+  fitModels<-function(splits,gids,
+                      modelType,
                       blups,selInd,SIwts,
                       gid="GID",
                       grms,dosages=NULL,
                       nBLASthreads){
-
     # internal testing of fitModels() inputs - one rep-fold
     # splits<-cvsamples$splits[[1]]
     # rm(splits)
@@ -402,136 +405,172 @@ runCrossVal<-function(blups,
     # subset kinship (and if modelType=="DirDom" also the dosages) matrices
     ### only lines with BLUPs for cross-validation
     A<-grms[["A"]][gids,gids]
-    if(modelType %in% c("AD","DirDom")){
-      D<-grms[["D"]][gids,gids]  }
-    if(modelType=="DirDom"){ dosages<-dosages[gids,] }
+    if(modelType %in% c("AD","DirDom")){ D<-grms[["D"]][gids,gids]  }
+    if(modelType=="DirDom"){
+      snps<-dosages[gids,]
+      Mmat<-centerDosage(snps);
+      Dmat<-dose2domDevGenotypic(snps)
+      f<-getPropHom(snps);
+      p<-getAF(snps)
+      q<-1-p
+      rm(snps);
+    }
 
-    # Set-up training set
-    predictions<-blups %>%
-      mutate(modelOut=map(TrainingData,function(TrainingData,...){
-        #TrainingData<-blups$TrainingData[[1]]
+    predictOneTrait<-possibly(function(TrainingData,splits,gid,
+                                       modelType,A,D=NULL,
+                                       Mmat=NULL,Dmat=NULL,f=NULL,p=NULL,q=NULL){
+      #TrainingData<-blups$TrainingData[[1]]
 
-        trainingdata<-TrainingData %>%
-          dplyr::rename(GID=!!sym(gid)) %>%
-          filter(GID %in% training(splits)[[gid]],
-                 GID %in% rownames(A))
+      trainingdata<-TrainingData %>%
+        dplyr::rename(GID=!!sym(gid)) %>%
+        filter(GID %in% training(splits)[[gid]],
+               GID %in% rownames(A))
 
-        trainingdata[[paste0(gid,"a")]]<-factor(trainingdata[["GID"]],
-                                                levels=rownames(A))
-        if(modelType %in% c("AD")){
-          trainingdata[[paste0(gid,"d")]]<-trainingdata[[paste0(gid,"a")]] }
-        if(modelType %in% c("DirDom")){
-          trainingdata[[paste0(gid,"d_star")]]<-trainingdata[[paste0(gid,"a")]] }
+      trainingdata[[paste0(gid,"a")]]<-factor(trainingdata[["GID"]],
+                                              levels=rownames(A))
+      if(modelType %in% c("AD")){
+        trainingdata[[paste0(gid,"d")]]<-trainingdata[[paste0(gid,"a")]] }
+      if(modelType %in% c("DirDom")){
+        trainingdata[[paste0(gid,"d_star")]]<-trainingdata[[paste0(gid,"a")]] }
 
-        # Set-up random model statements
-        randFormula<-paste0("~vs(",gid,"a,Gu=A)")
-        if(modelType %in% c("AD")){
-          randFormula<-paste0(randFormula,"+vs(",gid,"d,Gu=D)") }
-        if(modelType=="DirDom"){
-          randFormula<-paste0(randFormula,"+vs(",gid,"d_star,Gu=D)")
-          f<-getPropHom(dosages)
-          trainingdata %<>% mutate(f=f[trainingdata$GID]) }
+      # Set-up random model statements
+      randFormula<-paste0("~vs(",gid,"a,Gu=A)")
+      if(modelType %in% c("AD")){
+        randFormula<-paste0(randFormula,"+vs(",gid,"d,Gu=D)") }
+      if(modelType=="DirDom"){
+        randFormula<-paste0(randFormula,"+vs(",gid,"d_star,Gu=D)")
+        trainingdata %<>%
+          left_join(tibble(GID=names(f),f=as.numeric(f)))
+      }
 
-        # Fixed model statements
-        fixedFormula<-ifelse(modelType=="DirDom",
-                             "drgBLUP ~1+f","drgBLUP ~1")
-        # Fit genomic prediction model
-        require(sommer)
-        fit <- sommer::mmer(fixed = as.formula(fixedFormula),
-                            random = as.formula(randFormula),
-                            weights = WT,
-                            data=trainingdata,
-                            date.warning = F,
-                            getPEV = FALSE)
+      # Fixed model statements
+      fixedFormula<-ifelse(modelType=="DirDom",
+                           "drgBLUP ~1+f","drgBLUP ~1")
+      # Fit genomic prediction model
+      require(sommer)
+      fit <- sommer::mmer(fixed = as.formula(fixedFormula),
+                          random = as.formula(randFormula),
+                          weights = WT,
+                          data=trainingdata,
+                          date.warning = F,
+                          getPEV = FALSE)
 
-        print(paste0("GBLUP model complete - one trait"))
-        if(modelType=="DirDom"){
+      # reduce memory footprint
+      rm(A); if(modelType %in% c("AD","DirDom")){ rm(D); gc() }
 
-          # Backsolve SNP effects
-          # Compute allele sub effects
-          ## Every model has an additive random term
-          ga<-as.matrix(fit$U[[paste0("u:",gid,"a")]]$drgBLUP,ncol=1)
-          M<-centerDosage(dosages)
+      print(paste0("GBLUP model complete - one trait"))
+      if(modelType=="DirDom"){
 
-          # model DirDom is a different add-dom partition,
-          ### add effects are not allele sub effects and gblups are not GEBV
-          addsnpeff<-backsolveSNPeff(Z=M,g=ga)
-          ### dom effects are called d*, gd_star or domstar
-          ### because of the genome-wide homoz. term included in model
-          gd_star<-as.matrix(fit$U[[paste0("u:",gid,"d_star")]]$drgBLUP,ncol=1)
-          domdevMat_genotypic<-dose2domDevGenotypic(dosages)
-          domstar_snpeff<-backsolveSNPeff(Z=domdevMat_genotypic,g=gd_star)
-          ### b = the estimate (BLUE) for the genome-wide homoz. effect
-          b<-fit$Beta[fit$Beta$Effect=="f","Estimate"]
-          ### calc. domsnpeff including the genome-wide homoz. effect
-          ### divide the b effect up by number of SNPs and _subtract_ from domstar
-          domsnpeff<-domstar_snpeff-(b/length(domstar_snpeff))
+        # Backsolve SNP effects
+        # Compute allele sub effects
+        ## Every model has an additive random term
+        ga<-as.matrix(fit$U[[paste0("u:",gid,"a")]]$drgBLUP,ncol=1)
 
-          ### allele substitution effects using a+d(q-p) where d=d*-b/p
-          p<-getAF(dosages)
-          q<-1-p
-          allelesubsnpeff<-addsnpeff+(domsnpeff*(q-p))
-        }
+        # model DirDom is a different add-dom partition,
+        ### add effects are not allele sub effects and gblups are not GEBV
+        addsnpeff<-backsolveSNPeff(Z=Mmat,g=ga)
+        ### dom effects are called d*, gd_star or domstar
+        ### because of the genome-wide homoz. term included in model
+        gd_star<-as.matrix(fit$U[[paste0("u:",gid,"d_star")]]$drgBLUP,ncol=1)
+        domstar_snpeff<-backsolveSNPeff(Z=Dmat,g=gd_star)
+        ### b = the estimate (BLUE) for the genome-wide homoz. effect
+        b<-fit$Beta[fit$Beta$Effect=="f","Estimate"]
+        ### calc. domsnpeff including the genome-wide homoz. effect
+        ### divide the b effect up by number of SNPs and _subtract_ from domstar
+        domsnpeff<-domstar_snpeff-(b/length(domstar_snpeff))
 
-        # Gather the GBLUPs
-        if(modelType %in% c("A","AD")){
-          gblups<-tibble(GID=as.character(names(fit$U[[paste0("u:",gid,"a")]]$drgBLUP)),
-                         GEBV=as.numeric(fit$U[[paste0("u:",gid,"a")]]$drgBLUP)) }
-        if(modelType=="AD"){
-          gblups %<>% # compute GEDD (genomic-estimated dominance deviation)
-            mutate(GEDD=as.numeric(fit$U[[paste0("u:",gid,"d")]]$drgBLUP),
-                   # compute GETGV
-                   GETGV=rowSums(.[,grepl("GE",colnames(.))])) }
-        if(modelType=="DirDom"){
-          # re-calc the GBLUP, GEdomval using dom. effects where d=d*-b/p
-          ge_domval<-domdevMat_genotypic%*%domsnpeff
-          # calc. the GEBV using allele sub. effects where alpha=a+d(p-q), and d=d*-b/p
-          gebv<-M%*%allelesubsnpeff
-          # Tidy tibble of GBLUPs
-          gblups<-tibble(GID=as.character(names(fit$U[[paste0("u:",gid,"a")]]$drgBLUP)),
-                         GEadd=as.numeric(fit$U[[paste0("u:",gid,"a")]]$drgBLUP),
-                         GEdom_star=as.numeric(fit$U[[paste0("u:",gid,"d_star")]]$drgBLUP)) %>%
-            left_join(tibble(GID=rownames(ge_domval),GEdomval=as.numeric(ge_domval))) %>%
-            left_join(tibble(GID=rownames(gebv),GEBV=as.numeric(gebv))) %>%
-            # GETGV from GEadd + GEdomval
-            mutate(GETGV=GEadd+GEdomval)
-          print(paste0("Backsolving SNP effects for DirDom model compete - one trait"))
-        }
+        ### allele substitution effects using a+d(q-p) where d=d*-b/p
+        allelesubsnpeff<-addsnpeff+(domsnpeff*(q-p))
+      }
 
-        # this is to remove conflicts with dplyr function select() downstream
-        detach("package:sommer",unload = T); detach("package:MASS",unload = T)
+      # Gather the GBLUPs
+      if(modelType %in% c("A","AD")){
+        gblups<-tibble(GID=as.character(names(fit$U[[paste0("u:",gid,"a")]]$drgBLUP)),
+                       GEBV=as.numeric(fit$U[[paste0("u:",gid,"a")]]$drgBLUP)) }
+      if(modelType=="AD"){
+        gblups %<>% # compute GEDD (genomic-estimated dominance deviation)
+          mutate(GEDD=as.numeric(fit$U[[paste0("u:",gid,"d")]]$drgBLUP),
+                 # compute GETGV
+                 GETGV=rowSums(.[,grepl("GE",colnames(.))])) }
+
+      if(modelType=="DirDom"){
+        # re-calc the GBLUP, GEdomval using dom. effects where d=d*-b/p
+        ge_domval<-Dmat%*%domsnpeff
+        # calc. the GEBV using allele sub. effects where alpha=a+d(p-q), and d=d*-b/p
+        gebv<-Mmat%*%allelesubsnpeff
+        # Tidy tibble of GBLUPs
+        gblups<-tibble(GID=as.character(names(fit$U[[paste0("u:",gid,"a")]]$drgBLUP)),
+                       GEadd=as.numeric(fit$U[[paste0("u:",gid,"a")]]$drgBLUP),
+                       GEdom_star=as.numeric(fit$U[[paste0("u:",gid,"d_star")]]$drgBLUP)) %>%
+          left_join(tibble(GID=rownames(ge_domval),GEdomval=as.numeric(ge_domval))) %>%
+          left_join(tibble(GID=rownames(gebv),GEBV=as.numeric(gebv))) %>%
+          # GETGV from GEadd + GEdomval
+          mutate(GETGV=GEadd+GEdomval)
 
         # free up the memory footprint
-        rm(fit)
+        rm(ga,addsnpeff,gd_star,domstar_snpeff,b,domsnpeff,allelesubsnpeff,
+           ge_domval,gebv,Dmat,Mmat,fit); gc()
+        print(paste0("Backsolving SNP effects for DirDom model compete - one trait"))
+      }
 
-        # Calculate accuracy for each trait
-        ## Convert predicted gblups to a long-format
-        gblups %<>%
-          select(GID,any_of(c("GEBV","GETGV"))) %>%
-          pivot_longer(any_of(c("GEBV","GETGV")),
-                       names_to = "predOf",
-                       values_to = "GBLUP")
+      # this is to remove conflicts with dplyr function select() downstream
+      detach("package:sommer",unload = T); detach("package:MASS",unload = T)
 
-        ## Grab the test set BLUPs as validation data
-        validationData<-TrainingData %>%
-          dplyr::rename(GID=!!sym(gid)) %>%
-          dplyr::select(GID,BLUP) %>%
-          filter(GID %in% testing(splits)[[gid]])
+      # Calculate accuracy for each trait
+      ## Convert predicted gblups to a long-format
+      gblups %<>%
+        dplyr::select(GID,any_of(c("GEBV","GETGV"))) %>%
+        pivot_longer(any_of(c("GEBV","GETGV")),
+                     names_to = "predOf",
+                     values_to = "GBLUP")
 
-        # Measure accuracy in test set
-        ## cor(GEBV,BLUP)
-        ## cor(GETGV,BLUP)
-        accuracy<-gblups %>%
-          left_join(validationData) %>%
-          nest(predVSobs=c(GID,GBLUP,BLUP)) %>%
-          mutate(Accuracy=map_dbl(predVSobs,~cor(.$GBLUP,.$BLUP, use = 'complete.obs')))
-        return(accuracy)
-      }))
+      ## Grab the test set BLUPs as validation data
+      validationData<-TrainingData %>%
+        dplyr::rename(GID=!!sym(gid)) %>%
+        dplyr::select(GID,BLUP) %>%
+        filter(GID %in% testing(splits)[[gid]])
+
+      # Measure accuracy in test set
+      ## cor(GEBV,BLUP)
+      ## cor(GETGV,BLUP)
+      accuracy<-gblups %>%
+        left_join(validationData) %>%
+        nest(predVSobs=c(GID,GBLUP,BLUP)) %>%
+        mutate(Accuracy=map_dbl(predVSobs,~cor(.$GBLUP,.$BLUP, use = 'complete.obs')))
+      return(accuracy)
+    },
+    otherwise = NA)
+
+    # Predict for one trait to each trait's training dataset
+    if(modelType=="A"){
+      predictions<-blups %>%
+        mutate(modelOut=map(TrainingData,~predictOneTrait(TrainingData=.,
+                                                          splits=splits,gid=gid,
+                                                          modelType=modelType,
+                                                          A=A))) }
+    if(modelType=="AD"){
+      predictions<-blups %>%
+        mutate(modelOut=map(TrainingData,~predictOneTrait(TrainingData=.,
+                                                          splits=splits,gid=gid,
+                                                          modelType=modelType,
+                                                          A=A,D=D))) }
+    if(modelType=="DirDom"){
+      predictions<-blups %>%
+        mutate(modelOut=map(TrainingData,~predictOneTrait(TrainingData=.,
+                                                          splits=splits,gid=gid,
+                                                          modelType=modelType,
+                                                          A=A,D=D,
+                                                          Mmat=Mmat,Dmat=Dmat,
+                                                          f=f,p=p,q=q))) }
+
+    rm(A); if(modelType=="AD"){ rm(D) };
+    if(modelType=="DirDom"){ rm(D,Mmat,Dmat,f,p,q) }
+
     print(paste0("Genomic predictions done for all traits in one repeat-fold"))
 
     predictions %<>%
       select(-TrainingData) %>%
-      unnest(modelOut)
+      unnest(modelOut,keep_empty = F)
 
     if(selInd){
       # calc. SELIND and SELIND accuracy
@@ -542,44 +581,54 @@ runCrossVal<-function(blups,
         select(-BLUP) %>%
         pivot_wider(values_from = "GBLUP",
                     names_from = "Trait")
-      gblups %<>%
-        mutate(GBLUP=as.numeric((gblups %>%
-                                   select(names(SIwts)) %>%
-                                   as.matrix(.))%*%SIwts)) %>%
-        select(predOf,GID,GBLUP)
 
-      validationData<-blups %>%
-        unnest(TrainingData) %>%
-        select(Trait,GID,BLUP) %>%
-        pivot_wider(names_from = "Trait", values_from = "BLUP")
-      validationData %<>%
-        mutate(BLUP=as.numeric((validationData %>%
-                                  select(names(SIwts)) %>%
-                                  as.matrix(.))%*%SIwts)) %>%
-        select(GID,BLUP)
+      if(all(names(SIwts) %in% colnames(gblups))){
+        gblups %<>%
+          mutate(GBLUP=as.numeric((gblups %>%
+                                     select(names(SIwts)) %>%
+                                     as.matrix(.))%*%SIwts)) %>%
+          select(predOf,GID,GBLUP)
 
-      predictions %<>%
-        bind_rows(gblups %>%
-                    left_join(validationData) %>%
-                    nest(predVSobs=c(GID,GBLUP,BLUP)) %>%
-                    mutate(Trait="SELIND") %>%
-                    relocate(Trait,.before = 1) %>%
-                    mutate(Accuracy=map_dbl(predVSobs,~cor(.$GBLUP,.$BLUP, use = 'complete.obs'))))
+
+        validationData<-blups %>%
+          unnest(TrainingData) %>%
+          select(Trait,GID,BLUP) %>%
+          pivot_wider(names_from = "Trait", values_from = "BLUP")
+        validationData %<>%
+          mutate(BLUP=as.numeric((validationData %>%
+                                    select(names(SIwts)) %>%
+                                    as.matrix(.))%*%SIwts)) %>%
+          select(GID,BLUP)
+
+        predictions %<>%
+          bind_rows(gblups %>%
+                      left_join(validationData) %>%
+                      nest(predVSobs=c(GID,GBLUP,BLUP)) %>%
+                      mutate(Trait="SELIND") %>%
+                      relocate(Trait,.before = 1) %>%
+                      mutate(Accuracy=map_dbl(predVSobs,~cor(.$GBLUP,.$BLUP,
+                                                             use = 'na.or.complete'))))
+      }
     }
 
     predictions %<>%
-      mutate(NcompleteTestPairs=map_dbl(predVSobs,~na.omit(.) %>% nrow(.)))
+      mutate(NcompleteTestPairs=map_dbl(predVSobs,function(predVSobs){
+        if(!is.null(predVSobs)){
+          out<-na.omit(.) %>% nrow(.) } else { out<-NA }
+        return(out) }))
 
     return(predictions)
 
   }
+
   require(furrr); plan(multisession, workers = ncores)
   options(future.globals.maxSize=+Inf); options(future.rng.onMisuse="ignore")
   # quick test
   #cvsamples %<>% slice(1:2)
   cvsamples %<>%
     mutate(accuracyEstOut=future_map(splits,
-                                     ~fitModels(splits=.,modelType=modelType,
+                                     ~fitModels(splits=.,
+                                                modelType=modelType,
                                                 blups=blups,
                                                 selInd=selInd,SIwts=SIwts,
                                                 gid=gid,grms=grms,dosages=dosages,

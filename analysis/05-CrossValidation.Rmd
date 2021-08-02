@@ -262,10 +262,10 @@ R
 require(tidyverse); require(magrittr); 
 
 # 5 threads per Rsession for matrix math (openblas)
-RhpcBLASctl::blas_set_num_threads(5)
+# RhpcBLASctl::blas_set_num_threads(5)
 
 # SOURCE CORE FUNCTIONS
-source(here::here("code","gmsFunctions"))
+source(here::here("code","gmsFunctions.R"))
 source(here::here("code","predCrossVar.R"))
 
 # BLUPs
@@ -301,23 +301,31 @@ The new `runCrossVal()` function will:
 - if requested by `selInd=TRUE` (and supplying `SIwts`) each worker computes and returns the selection index accuracy 
 
 ```{r debug settings}
-# # runCrossVal() inputs
-# modelType="DirDom"
-# blups %<>% 
-#   slice(1:2) %>% # for testing, just 2 traits
-#   mutate(TrainingData=map(TrainingData, # and sample a small fraction of clones 
-#                           ~sample_frac(.,size = 0.1,replace = F)))
-# 
-# 
-# nrepeats=2; 
-# nfolds=2
-# gid="GID"
-# seed<-910838019
-# 
-# ncores=2
-# nBLASthreads=20
-# selInd=TRUE
-# SIwts<-SIwts[blups$Trait]
+# grms and dosages for testing the DirDom model
+grms<-list(A=readRDS(file=here::here("output","kinship_A_IITA_2021May13.rds")),
+           D=readRDS(file=here::here("output",
+                                     "kinship_domGenotypic_IITA_2021July5.rds")))
+dosages<-readRDS(file=here::here("data",
+                                 "dosages_IITA_filtered_2021May13.rds"))
+
+# runCrossVal() inputs
+modelType="DirDom"
+blups %<>%
+  slice(1:4) %>% # for testing, just 2 traits
+  mutate(TrainingData=map(TrainingData, # and sample a small fraction of clones
+                          ~sample_frac(.,size = 0.1,replace = F)))
+
+
+nrepeats=1
+nfolds=3
+gid="GID"
+seed<-42
+
+ncores=5
+nBLASthreads=5
+selInd=TRUE
+SIwts<-SIwts[blups$Trait[1:3]]
+
 ```
 ```{r develop a new runCrossVal function}
 #' @param modelType string, A, AD representing model with Additive-only, Add. plus Dominance, respectively. **NEW**: modelType="DirDom" includes a genome-wide homozygosity effect as in Xiang et al. 2016, uses a different dominance GRM and will probably be a little slower.
@@ -593,15 +601,356 @@ The new `runCrossVal()` function will:
 # test_ad %>% unnest(accuracyEstOut) %>% select(-splits,-predVSobs) %>% as.data.frame
 
 ```
+After deploying, I find the AD model works fine. However, DirDom is causing workers to completely detach from the master R session despite continuing.... need to figure this behavior out.
+
+```{r runCrossVal_test - fix DirDom model}
+runCrossVal_test<-function(blups,
+                           modelType,
+                           selInd,SIwts = NULL,
+                           grms,dosages=NULL,
+                           nrepeats,nfolds,
+                           ncores=1,nBLASthreads=NULL,
+                           gid="GID",seed=NULL,...){
+  
+  # SET-UP CROSS-VALIDATION TRAINING-TEST FOLDS
+  
+  # same train-test folds across traits
+  gids<-blups %>%
+    unnest(TrainingData) %>%
+    distinct(!!sym(gid)) %>%
+    .[[gid]]
+  
+  # whether or not user inputs a master seed
+  # generate and store in output
+  # seeds to make each replicate reproducible.
+  if(!is.null(seed)){
+    set.seed(seed);
+    seeds<-sample(1:1e6,replace = F,size = nrepeats)
+  } else {
+    seeds-sample(1:1e6,replace = F,size = nrepeats) }
+  
+  # Set-up replicated cross-validation folds
+  # splitting by clone (if clone in training dataset, it can't be in testing)
+  require(rsample)
+  cvsamples<-tibble(repeats=1:nrepeats,
+                    seeds=seeds,
+                    splits=map(seeds,function(seeds,...){
+                      set.seed(seeds);
+                      cvfolds<-vfold_cv(tibble(GID=gids),v = nfolds)
+                      return(cvfolds)})) %>%
+    unnest(splits)
+  
+  # FIT GENOMIC PREDICTION MODELS
+  
+  ## The fitModels() internal function
+  ## Now runs _across_ traits and, if requested,
+  ## computes the selection index accuracy
+  ## runCrossVal() now parallelizes over repeat-folds using ncores
+  ## Traits are handled in serial by each parallel worker
+  ## nBLASthreads controls the number of additional cores each worker
+  ## uses to speed matrix computations
+  ## Internal function
+  ## fits prediction model and calcs. accuracy for each train-test split
+  
+  fitModels<-function(splits,gids,
+                      modelType,
+                      blups,selInd,SIwts,
+                      gid="GID",
+                      grms,dosages=NULL,
+                      nBLASthreads){
+    # internal testing of fitModels() inputs - one rep-fold
+    # splits<-cvsamples$splits[[1]]
+    # rm(splits)
+    
+    if(!is.null(nBLASthreads)) { RhpcBLASctl::blas_set_num_threads(nBLASthreads) }
+    # workers in plan(multisession) need this call internal to the function, it seems.
+    
+    # subset kinship (and if modelType=="DirDom" also the dosages) matrices
+    ### only lines with BLUPs for cross-validation
+    A<-grms[["A"]][gids,gids]
+    if(modelType %in% c("AD","DirDom")){ D<-grms[["D"]][gids,gids]  }
+    if(modelType=="DirDom"){ 
+      snps<-dosages[gids,]
+      Mmat<-centerDosage(snps);
+      Dmat<-dose2domDevGenotypic(snps)
+      f<-getPropHom(snps);
+      p<-getAF(snps)
+      q<-1-p
+      rm(snps);
+    }
+    
+    predictOneTrait<-possibly(function(TrainingData,splits,gid,
+                                       modelType,A,D=NULL,
+                                       Mmat=NULL,Dmat=NULL,f=NULL,p=NULL,q=NULL){
+      #TrainingData<-blups$TrainingData[[1]]
+      
+      trainingdata<-TrainingData %>%
+        dplyr::rename(GID=!!sym(gid)) %>%
+        filter(GID %in% training(splits)[[gid]],
+               GID %in% rownames(A))
+      
+      trainingdata[[paste0(gid,"a")]]<-factor(trainingdata[["GID"]],
+                                              levels=rownames(A))
+      if(modelType %in% c("AD")){
+        trainingdata[[paste0(gid,"d")]]<-trainingdata[[paste0(gid,"a")]] }
+      if(modelType %in% c("DirDom")){
+        trainingdata[[paste0(gid,"d_star")]]<-trainingdata[[paste0(gid,"a")]] }
+      
+      # Set-up random model statements
+      randFormula<-paste0("~vs(",gid,"a,Gu=A)")
+      if(modelType %in% c("AD")){
+        randFormula<-paste0(randFormula,"+vs(",gid,"d,Gu=D)") }
+      if(modelType=="DirDom"){
+        randFormula<-paste0(randFormula,"+vs(",gid,"d_star,Gu=D)")
+        trainingdata %<>% 
+          left_join(tibble(GID=names(f),f=as.numeric(f)))
+      }
+      
+      # Fixed model statements
+      fixedFormula<-ifelse(modelType=="DirDom",
+                           "drgBLUP ~1+f","drgBLUP ~1")
+      # Fit genomic prediction model
+      require(sommer)
+      fit <- sommer::mmer(fixed = as.formula(fixedFormula),
+                          random = as.formula(randFormula),
+                          weights = WT,
+                          data=trainingdata,
+                          date.warning = F,
+                          getPEV = FALSE)
+      
+      # reduce memory footprint
+      rm(A); if(modelType %in% c("AD","DirDom")){ rm(D); gc() }
+      
+      print(paste0("GBLUP model complete - one trait"))
+      if(modelType=="DirDom"){
+        
+        # Backsolve SNP effects
+        # Compute allele sub effects
+        ## Every model has an additive random term
+        ga<-as.matrix(fit$U[[paste0("u:",gid,"a")]]$drgBLUP,ncol=1)
+        
+        # model DirDom is a different add-dom partition,
+        ### add effects are not allele sub effects and gblups are not GEBV
+        addsnpeff<-backsolveSNPeff(Z=Mmat,g=ga)
+        ### dom effects are called d*, gd_star or domstar
+        ### because of the genome-wide homoz. term included in model
+        gd_star<-as.matrix(fit$U[[paste0("u:",gid,"d_star")]]$drgBLUP,ncol=1)
+        domstar_snpeff<-backsolveSNPeff(Z=Dmat,g=gd_star)
+        ### b = the estimate (BLUE) for the genome-wide homoz. effect
+        b<-fit$Beta[fit$Beta$Effect=="f","Estimate"]
+        ### calc. domsnpeff including the genome-wide homoz. effect
+        ### divide the b effect up by number of SNPs and _subtract_ from domstar
+        domsnpeff<-domstar_snpeff-(b/length(domstar_snpeff))
+        
+        ### allele substitution effects using a+d(q-p) where d=d*-b/p
+        allelesubsnpeff<-addsnpeff+(domsnpeff*(q-p))
+      }
+      
+      # Gather the GBLUPs
+      if(modelType %in% c("A","AD")){
+        gblups<-tibble(GID=as.character(names(fit$U[[paste0("u:",gid,"a")]]$drgBLUP)),
+                       GEBV=as.numeric(fit$U[[paste0("u:",gid,"a")]]$drgBLUP)) }
+      if(modelType=="AD"){
+        gblups %<>% # compute GEDD (genomic-estimated dominance deviation)
+          mutate(GEDD=as.numeric(fit$U[[paste0("u:",gid,"d")]]$drgBLUP),
+                 # compute GETGV
+                 GETGV=rowSums(.[,grepl("GE",colnames(.))])) }
+      
+      if(modelType=="DirDom"){
+        # re-calc the GBLUP, GEdomval using dom. effects where d=d*-b/p
+        ge_domval<-Dmat%*%domsnpeff
+        # calc. the GEBV using allele sub. effects where alpha=a+d(p-q), and d=d*-b/p
+        gebv<-Mmat%*%allelesubsnpeff
+        # Tidy tibble of GBLUPs
+        gblups<-tibble(GID=as.character(names(fit$U[[paste0("u:",gid,"a")]]$drgBLUP)),
+                       GEadd=as.numeric(fit$U[[paste0("u:",gid,"a")]]$drgBLUP),
+                       GEdom_star=as.numeric(fit$U[[paste0("u:",gid,"d_star")]]$drgBLUP)) %>%
+          left_join(tibble(GID=rownames(ge_domval),GEdomval=as.numeric(ge_domval))) %>%
+          left_join(tibble(GID=rownames(gebv),GEBV=as.numeric(gebv))) %>%
+          # GETGV from GEadd + GEdomval
+          mutate(GETGV=GEadd+GEdomval)
+        
+        # free up the memory footprint
+        rm(ga,addsnpeff,gd_star,domstar_snpeff,b,domsnpeff,allelesubsnpeff,
+           ge_domval,gebv,Dmat,Mmat,fit); gc()
+        print(paste0("Backsolving SNP effects for DirDom model compete - one trait"))
+      }
+      
+      # this is to remove conflicts with dplyr function select() downstream
+      detach("package:sommer",unload = T); detach("package:MASS",unload = T)
+      
+      # Calculate accuracy for each trait
+      ## Convert predicted gblups to a long-format
+      gblups %<>%
+        dplyr::select(GID,any_of(c("GEBV","GETGV"))) %>%
+        pivot_longer(any_of(c("GEBV","GETGV")),
+                     names_to = "predOf",
+                     values_to = "GBLUP")
+      
+      ## Grab the test set BLUPs as validation data
+      validationData<-TrainingData %>%
+        dplyr::rename(GID=!!sym(gid)) %>%
+        dplyr::select(GID,BLUP) %>%
+        filter(GID %in% testing(splits)[[gid]])
+      
+      # Measure accuracy in test set
+      ## cor(GEBV,BLUP)
+      ## cor(GETGV,BLUP)
+      accuracy<-gblups %>%
+        left_join(validationData) %>%
+        nest(predVSobs=c(GID,GBLUP,BLUP)) %>%
+        mutate(Accuracy=map_dbl(predVSobs,~cor(.$GBLUP,.$BLUP, use = 'complete.obs')))
+      return(accuracy)
+    },
+    otherwise = NA)
+    
+    # Predict for one trait to each trait's training dataset
+    if(modelType=="A"){
+      predictions<-blups %>%
+        mutate(modelOut=map(TrainingData,~predictOneTrait(TrainingData=.,
+                                                          splits=splits,gid=gid,
+                                                          modelType=modelType,
+                                                          A=A))) }
+    if(modelType=="AD"){
+      predictions<-blups %>%
+        mutate(modelOut=map(TrainingData,~predictOneTrait(TrainingData=.,
+                                                          splits=splits,gid=gid,
+                                                          modelType=modelType,
+                                                          A=A,D=D))) }
+    if(modelType=="DirDom"){
+      predictions<-blups %>% 
+        mutate(modelOut=map(TrainingData,~predictOneTrait(TrainingData=.,
+                                                          splits=splits,gid=gid,
+                                                          modelType=modelType,
+                                                          A=A,D=D,
+                                                          Mmat=Mmat,Dmat=Dmat,
+                                                          f=f,p=p,q=q))) }
+    
+    rm(A); if(modelType=="AD"){ rm(D) }; 
+    if(modelType=="DirDom"){ rm(D,Mmat,Dmat,f,p,q) }
+    
+    print(paste0("Genomic predictions done for all traits in one repeat-fold"))
+    
+    predictions %<>%
+      select(-TrainingData) %>%
+      unnest(modelOut,keep_empty = F)
+    
+    if(selInd){
+      # calc. SELIND and SELIND accuracy
+      
+      gblups<-predictions %>%
+        select(-Accuracy) %>%
+        unnest(predVSobs) %>%
+        select(-BLUP) %>%
+        pivot_wider(values_from = "GBLUP",
+                    names_from = "Trait")
+      
+      if(all(names(SIwts) %in% colnames(gblups))){
+        gblups %<>%
+          mutate(GBLUP=as.numeric((gblups %>%
+                                     select(names(SIwts)) %>%
+                                     as.matrix(.))%*%SIwts)) %>%
+          select(predOf,GID,GBLUP)
+        
+        
+        validationData<-blups %>%
+          unnest(TrainingData) %>%
+          select(Trait,GID,BLUP) %>%
+          pivot_wider(names_from = "Trait", values_from = "BLUP")
+        validationData %<>%
+          mutate(BLUP=as.numeric((validationData %>%
+                                    select(names(SIwts)) %>%
+                                    as.matrix(.))%*%SIwts)) %>%
+          select(GID,BLUP)
+        
+        predictions %<>%
+          bind_rows(gblups %>%
+                      left_join(validationData) %>%
+                      nest(predVSobs=c(GID,GBLUP,BLUP)) %>%
+                      mutate(Trait="SELIND") %>%
+                      relocate(Trait,.before = 1) %>%
+                      mutate(Accuracy=map_dbl(predVSobs,~cor(.$GBLUP,.$BLUP, 
+                                                             use = 'na.or.complete'))))
+      }
+    }
+    
+    predictions %<>% 
+      mutate(NcompleteTestPairs=map_dbl(predVSobs,function(predVSobs){ 
+        if(!is.null(predVSobs)){ 
+          out<-na.omit(.) %>% nrow(.) } else { out<-NA }
+        return(out) }))
+    
+    return(predictions)
+    
+  }
+  
+  require(furrr); plan(multisession, workers = ncores)
+  options(future.globals.maxSize=+Inf); options(future.rng.onMisuse="ignore")
+  # quick test
+  #cvsamples %<>% slice(1:2)
+  cvsamples %<>%
+    mutate(accuracyEstOut=future_map(splits,
+                                     ~fitModels(splits=.,
+                                                modelType=modelType,
+                                                blups=blups,
+                                                selInd=selInd,SIwts=SIwts,
+                                                gid=gid,grms=grms,dosages=dosages,
+                                                nBLASthreads=nBLASthreads)))
+  plan(sequential)
+  return(cvsamples)
+}
+```
+
+```{r test runCrossVal_test}
+testcv_dirdom<-runCrossVal_test(blups=blups,
+                                modelType="DirDom",
+                                selInd=TRUE,SIwts=SIwts,
+                                grms=grms,dosages=dosages,
+                                nrepeats=1,nfolds=3,
+                                ncores=7,nBLASthreads=5,
+                                gid="GID",seed=42)
+
+testcv_ad<-runCrossVal_test(blups=blups,
+                                modelType="AD",
+                                selInd=TRUE,SIwts=SIwts,
+                                grms=grms,dosages=NULL,
+                                nrepeats=1,nfolds=3,
+                                ncores=3,nBLASthreads=12,
+                                gid="GID",seed=42)
+```
+
+It seems to work even when there are intentionally data chunks that fails. 
+
 
 ## Full run of both models 5-reps x 5-folds
 
-cbsulm - 112 cores, 512 GB RAM
+cbsulm15 - 112 cores, 512 GB RAM
+```{r runCrossVal - model AD}
+# GENOMIC RELATIONSHIP MATRICES (GRMS)
+grms_ad<-list(A=readRDS(file=here::here("output","kinship_A_IITA_2021May13.rds")),
+              D=readRDS(file=here::here("output","kinship_D_IITA_2021May13.rds")))
+## achieves the classic TGV=BV+TGV partition
+stdcv_ad<-runCrossVal(blups=blups,
+                      modelType="AD",
+                      selInd=TRUE,SIwts=SIwts,
+                      grms=grms_ad,dosages=NULL,
+                      nrepeats=5,nfolds=5,
+                      ncores=20,nBLASthreads=5,
+                      gid="GID",seed=42)
+saveRDS(stdcv_ad,here::here("output","stdcv_AD_predAccuracy.rds"))
+
+stdcv_ad %>% 
+  select(-splits) %>% 
+  unnest(accuracyEstOut) %>% 
+  select(-predVSobs)
+```
+
+cbsulm17 - 112 cores, 512 GB RAM
 ```{r runCrossVal - model DirDom}
 # GENOMIC RELATIONSHIP MATRICES (GRMS)
-grms<-list(A=readRDS(file=here::here("output","kinship_A_IITA_2021May13.rds")),
-           D=readRDS(file=here::here("output",
-                                     "kinship_domGenotypic_IITA_2021July5.rds")))
+grms_dirdom<-list(A=readRDS(file=here::here("output","kinship_A_IITA_2021May13.rds")),
+                  D=readRDS(file=here::here("output",
+                                            "kinship_domGenotypic_IITA_2021July5.rds")))
 ## using A+domGenotypic (instead of domClassic used previously)
 ## will achieve appropriate dom effects for predicting family mean TGV
 ## but resulting add effects WILL NOT represent allele sub. effects and thus
@@ -612,32 +961,16 @@ grms<-list(A=readRDS(file=here::here("output","kinship_A_IITA_2021May13.rds")),
 dosages<-readRDS(file=here::here("data",
                                  "dosages_IITA_filtered_2021May13.rds"))
 
-stdcv_dirdom<-runCrossVal(blups=blups,modelType="DirDom",
+stdcv_dirdom<-runCrossVal(blups=blups,
+                          modelType="DirDom",
                           selInd=TRUE,SIwts=SIwts,
-                          grms=grms,dosages=dosages,
+                          grms=grms_dirdom,dosages=dosages,
                           nrepeats=5,nfolds=5,
                           ncores=20,nBLASthreads=5,
-                          gid="GID",seed=9108338019)
+                          gid="GID",seed=42)
 saveRDS(stdcv_dirdom,here::here("output","stdcv_DirDom_predAccuracy.rds"))
 
 ```
-
-cbsulm - 112 cores, 512 GB RAM
-```{r runCrossVal - model AD}
-# GENOMIC RELATIONSHIP MATRICES (GRMS)
-grms_ad<-list(A=readRDS(file=here::here("output","kinship_A_IITA_2021May13.rds")),
-              D=readRDS(file=here::here("output","kinship_D_IITA_2021May13.rds")))
-## achieves the classic TGV=BV+TGV partition
-stdcv_ad<-runCrossVal(blups=blups,modelType="AD",
-                          selInd=TRUE,SIwts=SIwts,
-                          grms=grms,dosages=NULL,
-                          nrepeats=5,nfolds=5,
-                          ncores=20,nBLASthreads=5,
-                          gid="GID",seed=9108338019)
-saveRDS(stdcv_ad,here::here("output","stdcv_AD_predAccuracy.rds"))
-```
-
-
 
 # [TO DO] PHG parent-wise cross-validation
 
