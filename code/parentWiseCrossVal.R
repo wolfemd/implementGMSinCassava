@@ -44,11 +44,10 @@ runParentWiseCrossVal<-function(nrepeats,nfolds,seed=NULL,modelType,
   ## Predict cross variances
   print("Predicting cross variances and covariances")
   starttime<-proc.time()[3]
-  cvPredVars<-predictCrossVars(modelType=modelType,ncores=ncores,
-                               snpeffs=markEffs,
+  cvPredVars<-predictCrossVars(modelType=modelType,snpeffs=markEffs,
                                parentfolds=parentfolds,
-                               haploMat=haploMat,
-                               recombFreqMat=recombFreqMat)
+                               haploMat=haploMat,recombFreqMat=recombFreqMat,
+                               ncores=ncores,nBLASthreads=nBLASthreads)
   print(paste0("Cross variance parameters predicted. Took  ",
                round((proc.time()[3] - starttime)/60/60,5)," hrs"))
 
@@ -93,7 +92,8 @@ runParentWiseCrossVal<-function(nrepeats,nfolds,seed=NULL,modelType,
   return(accuracy_out)
 }
 
-getMarkEffs<-function(parentfolds,blups,gid,modelType,grms,dosages,ncores,nBLASthreads=NULL){
+getMarkEffs<-function(parentfolds,blups,gid,modelType,grms,dosages,
+                      ncores,nBLASthreads=NULL){
 
   traintestdata<-parentfolds %>%
     dplyr::select(Repeat,Fold,trainset,testset) %>%
@@ -164,6 +164,7 @@ getMarkEffs<-function(parentfolds,blups,gid,modelType,grms,dosages,ncores,nBLASt
       # model DirDom is a different add-dom partition,
       ### add effects are not allele sub effects and gblups are not GEBV
       addsnpeff<-backsolveSNPeff(Z=M,g=ga)
+
       ### dom effects are called d*, gd_star or domstar
       ### because of the genome-wide homoz. term included in model
       gd_star<-as.matrix(fit$U[[paste0("u:",gid,"d_star")]]$drgBLUP,ncol=1)
@@ -250,7 +251,7 @@ getMarkEffs<-function(parentfolds,blups,gid,modelType,grms,dosages,ncores,nBLASt
 }
 
 predictCrossVars<-function(modelType,snpeffs,parentfolds,
-                           haploMat,recombFreqMat,ncores){
+                           haploMat,recombFreqMat,ncores,nBLASthreads=NULL){
   predvars<-snpeffs %>%
     unnest(effects,keep_empty = FALSE) %>%
     filter(Dataset=="trainset") %>%
@@ -301,7 +302,8 @@ predictCrossVars<-function(modelType,snpeffs,parentfolds,
                                           modelType="A",
                                           haploMat=haploMat,
                                           recombFreqMat=recombFreqMat,
-                                          ncores=ncores) %>%
+                                          ncores=ncores,
+                                          nBLASthreads=nBLASthreads) %>%
                              unnest(predVars) %>%
                              mutate(predOf="VarBV") %>%
                              nest(predVars=c(Trait1,Trait2,predOf,predVar)))) }
@@ -316,7 +318,8 @@ predictCrossVars<-function(modelType,snpeffs,parentfolds,
                            modelType="AD",
                            haploMat=haploMat,
                            recombFreqMat=recombFreqMat,
-                           ncores=ncores)
+                           ncores=ncores,
+                           nBLASthreads=nBLASthreads)
         out<-out %>%
           unnest(predVars) %>%
           mutate(predOf=ifelse(predOf=="VarA","VarBV","VarDD")) %>%
@@ -335,14 +338,16 @@ predictCrossVars<-function(modelType,snpeffs,parentfolds,
                                   modelType="AD", # no "DirDom" model in predCrossVars() nor is it needed
                                   haploMat=haploMat,
                                   recombFreqMat=recombFreqMat,
-                                  ncores=ncores)
+                                  ncores=ncores,
+                                  nBLASthreads=nBLASthreads)
         predVarBV<-predCrossVars(CrossesToPredict=CrossesToPredict,
                                  AddEffectList=AlleleSubEffectList,
                                  DomEffectList=NULL,
                                  modelType="A", # no "DirDom" model in predCrossVars() nor is it needed
                                  haploMat=haploMat,
                                  recombFreqMat=recombFreqMat,
-                                 ncores=ncores)
+                                 ncores=ncores,
+                                 nBLASthreads=nBLASthreads)
         out<-predVarBV %>%
           unnest(predVars) %>%
           mutate(predOf="VarBV") %>%
