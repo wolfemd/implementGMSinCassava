@@ -63,16 +63,16 @@ runParentWiseCrossVal<-function(nrepeats,nfolds,seed=NULL,modelType,
   print("Compute prediction accuracies and wrap up.")
   ## Variance prediction accuracies
   starttime<-proc.time()[3]
-  varPredAcc<-varPredAccuracy(modelType = modelType,
-                                   crossValOut = cvPredVars,
-                                   snpeffs = markEffs,
-                                   ped = ped,selInd = selInd,SIwts = SIwts)
+  varPredAcc<-varPredAccuracy(modelType = modelType,ncores=ncores,
+                              crossValOut = cvPredVars,
+                              snpeffs = markEffs,
+                              ped = ped,selInd = selInd,SIwts = SIwts)
 
   ## Mean prediction accuracies
   meanPredAcc<-meanPredAccuracy(modelType = modelType,
-                                     crossValOut = cvPredMeans,
-                                     snpeffs = markEffs,
-                                     ped = ped,selInd = selInd,SIwts = SIwts)
+                                crossValOut = cvPredMeans,
+                                snpeffs = markEffs,
+                                ped = ped,selInd = selInd,SIwts = SIwts)
 
   if(!is.null(outName)){
     print("Saving outputs to disk.")
@@ -418,7 +418,7 @@ predictCrossMeans<-function(modelType,snpeffs,parentfolds,
 }
 
 varPredAccuracy<-function(crossValOut,snpeffs,ped,modelType,
-                          selInd=FALSE,SIwts=NULL){
+                          selInd=FALSE,SIwts=NULL,ncores){
 
   # Extract and format the GBLUPs from the marker effects object
   gblups<-snpeffs %>%
