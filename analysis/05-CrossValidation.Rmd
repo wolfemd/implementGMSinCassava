@@ -80,7 +80,7 @@ Fully-tested `runParentWiseCrossVal()` and component functions are in the `code/
 Below, source it and use it for a full cross-validation run. 
 
 ```{r install packages if needed}
-# install.packages(c("RhpcBLASctl","here","rsample","sommer","psych","future.callr","furrr","lme4"))
+# install.packages(c("RhpcBLASctl","here","rsample","sommer","psych","future.callr","furrr","lme4","qs"))
 # install.packages('future.callr')
 ```
 
@@ -330,6 +330,723 @@ stdcv_dirdom<-runCrossVal(blups=blups,
 saveRDS(stdcv_dirdom,here::here("output","stdcv_DirDom_predAccuracy.rds"))
 
 ```
+
+# Optimize marker density for speed
+
+```{bash usual R environment, eval=F}
+# 1) start a screen shell 
+screen; # or screen -r if re-attaching...
+# 2) start the singularity Linux shell inside that
+#singularity shell /workdir/$USER/rocker.sif; 
+singularity shell ~/rocker2.sif; 
+# Project directory, so R will use as working dir.
+cd /home/mw489/implementGMSinCassava/;
+# 3) Start R
+R
+```
+
+Cross-variance prediction is slow, but significant speed gains can be made by using fewer markers for the predictions. Examine the speed benefit vs. accuracy cost trade-off.
+
+## LD pruning to achieve lower marker numbers
+
+Two ways to accomplish reduced marker number: (1) random sample, (2) LD-pruning ([as in the preprocessing step _here_](https://wolfemd.github.io/implementGMSinCassava/04-PreprocessDataFiles.html#Variant_filters)). 
+
+Try both below.
+
+Use cross-validation to compare accuracy achieved.
+
+**DirDom** model-only at this point.
+
+Use more stringent versions of the `plink1.9 --indep-pairwise` used previously ([here](https://wolfemd.github.io/implementGMSinCassava/04-PreprocessDataFiles.html#Variant_filters))
+
+```{plink, eval=F}
+cd ~/implementGMSinCassava/
+export PATH=/programs/plink-1.9-x86_64-beta3.30:$PATH;
+# plink --bfile data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719 \
+#   --keep output/samples2keep_IITA_2021May13.txt \
+#   --indep-pairwise 250 'kb' 125 0.9 \
+#   --out output/samples2keep_IITA_MAFpt01_prune250kb_125_pt9; 
+#  24986 of 68068 variants removed. (43082 left, more than original filter)
+
+plink --bfile data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719 \
+  --keep output/samples2keep_IITA_2021May13.txt \
+  --indep-pairwise 1000 'kb' 50 0.9 \
+  --out output/samples2keep_IITA_MAFpt01_prune1Mb_50kb_pt9; 
+# Pruned 6587 variants from chromosome 1, leaving 1720.
+# Pruned 2524 variants from chromosome 2, leaving 1457.
+# Pruned 2904 variants from chromosome 3, leaving 1350.
+# Pruned 3110 variants from chromosome 4, leaving 1006.
+# Pruned 2918 variants from chromosome 5, leaving 1222.
+# Pruned 2510 variants from chromosome 6, leaving 1142.
+# Pruned 1288 variants from chromosome 7, leaving 800.
+# Pruned 2454 variants from chromosome 8, leaving 1311.
+# Pruned 2557 variants from chromosome 9, leaving 971.
+# Pruned 1889 variants from chromosome 10, leaving 1123.
+# Pruned 2225 variants from chromosome 11, leaving 1175.
+# Pruned 1982 variants from chromosome 12, leaving 990.
+# Pruned 2059 variants from chromosome 13, leaving 879.
+# Pruned 4004 variants from chromosome 14, leaving 1540.
+# Pruned 2877 variants from chromosome 15, leaving 1097.
+# Pruned 2059 variants from chromosome 16, leaving 835.
+# Pruned 1996 variants from chromosome 17, leaving 976.
+# Pruned 2226 variants from chromosome 18, leaving 1051.
+# Pruning complete.  48169 of 68814 variants removed. (20645 left) 
+
+plink --bfile data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719 \
+  --keep output/samples2keep_IITA_2021May13.txt \
+  --indep-pairwise 1000 'kb' 50 0.8 \
+  --out output/samples2keep_IITA_MAFpt01_prune1Mb_50kb_pt8; 
+# Pruned 7131 variants from chromosome 1, leaving 1176.
+# Pruned 2888 variants from chromosome 2, leaving 1093.
+# Pruned 3287 variants from chromosome 3, leaving 967.
+# Pruned 3358 variants from chromosome 4, leaving 758.
+# Pruned 3229 variants from chromosome 5, leaving 911.
+# Pruned 2732 variants from chromosome 6, leaving 920.
+# Pruned 1438 variants from chromosome 7, leaving 650.
+# Pruned 2738 variants from chromosome 8, leaving 1027.
+# Pruned 2826 variants from chromosome 9, leaving 702.
+# Pruned 2190 variants from chromosome 10, leaving 822.
+# Pruned 2506 variants from chromosome 11, leaving 894.
+# Pruned 2236 variants from chromosome 12, leaving 736.
+# Pruned 2268 variants from chromosome 13, leaving 670.
+# Pruned 4448 variants from chromosome 14, leaving 1096.
+# Pruned 3188 variants from chromosome 15, leaving 786.
+# Pruned 2256 variants from chromosome 16, leaving 638.
+# Pruned 2247 variants from chromosome 17, leaving 725.
+# Pruned 2506 variants from chromosome 18, leaving 771.
+# Pruning complete.  53472 of 68814 variants removed. (15342 left)
+
+plink --bfile data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719 \
+  --keep output/samples2keep_IITA_2021May13.txt \
+  --indep-pairwise 1000 'kb' 50 0.7 \
+  --out output/samples2keep_IITA_MAFpt01_prune1Mb_50kb_pt7; 
+# Pruned 7413 variants from chromosome 1, leaving 894.
+# Pruned 3118 variants from chromosome 2, leaving 863.
+# Pruned 3504 variants from chromosome 3, leaving 750.
+# Pruned 3484 variants from chromosome 4, leaving 632.
+# Pruned 3426 variants from chromosome 5, leaving 714.
+# Pruned 2913 variants from chromosome 6, leaving 739.
+# Pruned 1555 variants from chromosome 7, leaving 533.
+# Pruned 2932 variants from chromosome 8, leaving 833.
+# Pruned 2972 variants from chromosome 9, leaving 556.
+# Pruned 2372 variants from chromosome 10, leaving 640.
+# Pruned 2709 variants from chromosome 11, leaving 691.
+# Pruned 2381 variants from chromosome 12, leaving 591.
+# Pruned 2411 variants from chromosome 13, leaving 527.
+# Pruned 4736 variants from chromosome 14, leaving 808.
+# Pruned 3370 variants from chromosome 15, leaving 604.
+# Pruned 2372 variants from chromosome 16, leaving 522.
+# Pruned 2396 variants from chromosome 17, leaving 576.
+# Pruned 2663 variants from chromosome 18, leaving 614.
+# Pruning complete.  56727 of 68814 variants removed. (12087 left)
+
+plink --bfile data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719 \
+  --keep output/samples2keep_IITA_2021May13.txt \
+  --indep-pairwise 1000 'kb' 50 0.6 \
+  --out output/samples2keep_IITA_MAFpt01_prune1Mb_50kb_pt6; 
+# Pruned 7619 variants from chromosome 1, leaving 688.
+# Pruned 3354 variants from chromosome 2, leaving 627.
+# Pruned 3666 variants from chromosome 3, leaving 588.
+# Pruned 3596 variants from chromosome 4, leaving 520.
+# Pruned 3597 variants from chromosome 5, leaving 543.
+# Pruned 3060 variants from chromosome 6, leaving 592.
+# Pruned 1670 variants from chromosome 7, leaving 418.
+# Pruned 3094 variants from chromosome 8, leaving 671.
+# Pruned 3073 variants from chromosome 9, leaving 455.
+# Pruned 2511 variants from chromosome 10, leaving 501.
+# Pruned 2882 variants from chromosome 11, leaving 518.
+# Pruned 2493 variants from chromosome 12, leaving 479.
+# Pruned 2505 variants from chromosome 13, leaving 433.
+# Pruned 4929 variants from chromosome 14, leaving 615.
+# Pruned 3528 variants from chromosome 15, leaving 446.
+# Pruned 2455 variants from chromosome 16, leaving 439.
+# Pruned 2508 variants from chromosome 17, leaving 464.
+# Pruned 2773 variants from chromosome 18, leaving 504.
+# Pruning complete.  59313 of 68814 variants removed. (9501 left)
+
+plink --bfile data/AllChrom_RefPanelAndGSprogeny_ReadyForGP_72719 \
+  --keep output/samples2keep_IITA_2021May13.txt \
+  --indep-pairwise 1000 'kb' 50 0.5 \
+  --out output/samples2keep_IITA_MAFpt01_prune1Mb_50kb_pt5; 
+# Pruned 7791 variants from chromosome 1, leaving 516.
+# Pruned 3497 variants from chromosome 2, leaving 484.
+# Pruned 3800 variants from chromosome 3, leaving 454.
+# Pruned 3688 variants from chromosome 4, leaving 428.
+# Pruned 3722 variants from chromosome 5, leaving 418.
+# Pruned 3205 variants from chromosome 6, leaving 447.
+# Pruned 1747 variants from chromosome 7, leaving 341.
+# Pruned 3228 variants from chromosome 8, leaving 537.
+# Pruned 3161 variants from chromosome 9, leaving 367.
+# Pruned 2622 variants from chromosome 10, leaving 390.
+# Pruned 2992 variants from chromosome 11, leaving 408.
+# Pruned 2589 variants from chromosome 12, leaving 383.
+# Pruned 2591 variants from chromosome 13, leaving 347.
+# Pruned 5094 variants from chromosome 14, leaving 450.
+# Pruned 3653 variants from chromosome 15, leaving 321.
+# Pruned 2549 variants from chromosome 16, leaving 345.
+# Pruned 2596 variants from chromosome 17, leaving 376.
+# Pruned 2877 variants from chromosome 18, leaving 400.
+# Pruning complete.  61402 of 68814 variants removed. (7412)
+```
+
+Settled on 4 subsets based on LD-pruning `plink --indep-pairwise` looking at 1 Mb windows in steps of 50 Kb pruning using the $r^2$ thresholds `0.9` (~20K), `0.8` (~15K), `0.6` (~10K), `0.5` (~7K). Skipping `0.7` because 12K just not diff enough from 10 or 15K for me.
+
+Used plink-output list below to prune downstream input files. 
+
+Subsetting the unfiltered version of the `haps` and `dosages` (e.g. `dosages_IITA_2021May13.rds`) can be done on read-in rather than creating new, smaller files on disk.
+
+1. `grms` (kinship matrices) will need to be remade and pre-stored on disk.
+2. Genetic map needs to interpolated that includes _all_ possible markers (in [previous version](https://wolfemd.github.io/implementGMSinCassava/04-PreprocessDataFiles.html#Genetic_Map), only did so for the ~34K "filtered" variants) and a `recombFreqMat` needs to be created and stored on disk based on that. After that the `recombFreqMat` can _also_ be subset on loading.
+
+```{r grms, eval=F}
+library(tidyverse); library(magrittr); 
+dosages<-readRDS(file=here::here("data","dosages_IITA_2021May13.rds"))
+source(here::here("code","gmsFunctions.R"))
+
+snpsets<-tibble(Filter=c(5,6,8,9)) %>% 
+  mutate(snps2keep=map(Filter,~read.table(here::here("output",
+                                                     paste0("samples2keep_IITA_MAFpt01_prune1Mb_50kb_pt",.,".prune.in")),
+                                          header = F, stringsAsFactors = F)))
+snpsets %<>% 
+  mutate(snps2keep=map(snps2keep,function(snps2keep,...){
+    tokeep<-tibble(FULL_SNP_ID=colnames(dosages)) %>% 
+      separate(FULL_SNP_ID,c("Chr","Pos","Ref","Alt"),remove = F) %>% 
+      mutate(SNP_ID=paste0("S",Chr,"_",Pos)) %>% 
+      filter(SNP_ID %in% snps2keep$V1)
+    return(tokeep)}),
+    Filter=paste0("1Mb_50kb_pt",Filter))
+
+RhpcBLASctl::blas_set_num_threads(56)
+snpsets %<>% 
+  mutate(Amat=map(snps2keep,~kinship(dosages[,.$FULL_SNP_ID],type="add")),
+         Dmat=map(snps2keep,~kinship(dosages[,.$FULL_SNP_ID],type="domGenotypic")))
+library(qs)
+qsave(snpsets,file=here::here("output","kinships_LDpruningSeries_2021Aug02.qs"),nthreads = 20)
+```
+Next interpolate a genetic map for _all_ 68K markers for max utility. As mentioned above, need it to make a `recombFreqMat`. 
+```{r}
+genmap<-read.table(here::here("data/CassavaGeneticMap",
+                              "cassava_cM_pred.v6.allchr.txt"),
+           header = F, stringsAsFactors = F,sep=';') %>% 
+  rename(SNP_ID=V1,Pos=V2,cM=V3) %>% 
+  as_tibble
+
+snps_genmap<-tibble(DoseSNP_ID=colnames(dosages)) %>% 
+  separate(DoseSNP_ID,c("Chr","Pos","Ref","Alt"),remove = F) %>% 
+  mutate(SNP_ID=paste0("S",Chr,"_",Pos)) %>% 
+  left_join(genmap %>% mutate(across(everything(),as.character)))
+```
+```{r}
+interpolate_genmap<-function(data){
+  # for each chromosome map
+  # find and _decrements_ in the genetic map distance
+  # fix them to the cumulative max to force map to be only increasing
+  # fit a spline for each chromosome
+  # Use it to predict values for positions not previously on the map
+  # fix them AGAIN (in case) to the cumulative max, forcing map to only increase
+  data_forspline<-data %>% 
+    filter(!is.na(cM)) %>% 
+    mutate(cumMax=cummax(cM),
+           cumIncrement=cM-cumMax) %>% 
+    filter(cumIncrement>=0) %>% 
+    select(-cumMax,-cumIncrement)
+  
+  spline<-data_forspline %$% smooth.spline(x=Pos,y=cM,spar = 0.75)
+  
+  splinemap<-predict(spline,x = data$Pos) %>% 
+    as_tibble(.) %>% 
+    rename(Pos=x,cM=y) %>% 
+    mutate(cumMax=cummax(cM),
+           cumIncrement=cM-cumMax) %>% 
+    mutate(cM=cumMax) %>% 
+    select(-cumMax,-cumIncrement)
+  
+  return(splinemap) 
+}
+```
+```{r genmap}
+splined_snps_genmap<-snps_genmap %>% 
+  select(-cM) %>% 
+  mutate(Pos=as.numeric(Pos)) %>% 
+  left_join(snps_genmap %>% 
+              mutate(across(c(Pos,cM),as.numeric)) %>% 
+              arrange(Chr,Pos) %>% 
+              nest(data=-Chr) %>% 
+              mutate(data=map(data,interpolate_genmap)) %>% 
+              unnest(data)) %>% 
+  distinct
+```
+```{r}
+all(splined_snps_genmap$DoseSNP_ID == colnames(dosages))
+# [1] TRUE
+
+saveRDS(splined_snps_genmap,file=here::here("data","genmap_2021Aug02.rds"))
+```
+```{r, fig.width=9}
+readRDS(here::here("data","genmap_2021Aug02.rds")) %>% 
+  mutate(Map="Spline") %>% 
+   ggplot(.,aes(x=Pos/1000/1000,y=cM,color=Map),alpha=0.5,size=0.75) + 
+  geom_point() + 
+  theme_bw() + facet_wrap(~as.integer(Chr), scales='free_x')
+```
+
+
+Construct a matrix of recombination frequencies at loci for all study loci. 
+Pre-compute 1-2c to save time predicting cross variance.
+```{r recombFreqMat, eval=F}
+rm(list=ls()); gc()
+library(tidyverse); library(magrittr); library(qs)
+RhpcBLASctl::blas_set_num_threads(106)
+source(here::here("code","predCrossVar.R"))
+genmap<-readRDS(file=here::here("data","genmap_2021Aug02.rds"))
+
+m<-genmap$cM;
+names(m)<-genmap$DoseSNP_ID
+recombFreqMat<-1-(2*genmap2recombfreq(m,nChr = 18))
+qsave(recombFreqMat,file=here::here("data","recombFreqMat_1minus2c_2021Aug02.qs"),nthreads = 56)
+```
+
+
+## Parent-wise CV of marker subsets
+```{r}
+require(tidyverse); require(magrittr); library(qs)
+
+# SOURCE CORE FUNCTIONS
+source(here::here("code","parentWiseCrossVal.R"))
+source(here::here("code","predCrossVar.R"))
+
+# PEDIGREE
+ped<-read.table(here::here("output","verified_ped.txt"),
+                header = T, stringsAsFactors = F) %>% 
+  rename(GID=FullSampleName,
+         damID=DamID,
+         sireID=SireID) %>% 
+  dplyr::select(GID,sireID,damID)
+# Keep only families with _at least_ 2 offspring
+ped %<>%
+  semi_join(ped %>% count(sireID,damID) %>% filter(n>1) %>% ungroup())
+
+# BLUPs
+blups<-readRDS(file=here::here("data","blups_forCrossVal.rds")) %>% 
+  dplyr::select(-varcomp)
+
+# LD-PRUNNED SNP SETS + GRMS
+snpsets<-qread(here::here("output","kinships_LDpruningSeries_2021Aug02.qs"),
+               nthreads = 56)
+
+# DOSAGE MATRIX (UNFILTERED)
+dosages<-readRDS(file=here::here("data","dosages_IITA_2021May13.rds"))
+
+# RECOMBINATION FREQUENCY MATRIX (UNFILTERED)
+recombFreqMat<-qread(file=here::here("data",
+                                     "recombFreqMat_1minus2c_2021Aug02.qs"))
+# ,
+#                      nthreads = 56)
+
+# HAPLOTYPE MATRIX (UNFILTERED)
+## keep only haplos for parents-in-the-pedigree
+## those which will be used in prediction, saves memory
+haploMat<-readRDS(file=here::here("data","haps_IITA_2021May13.rds"))
+parents<-union(ped$sireID,ped$damID) 
+parenthaps<-sort(c(paste0(parents,"_HapA"),
+                   paste0(parents,"_HapB")))
+haploMat<-haploMat[parenthaps,colnames(recombFreqMat)]
+
+# SELECTION INDEX WEIGHTS
+## from IYR+IK
+## note that not ALL predicted traits are on index
+SIwts<-c(logFYLD=20,
+         HI=10,
+         DM=15,
+         MCMDS=-10,
+         logRTNO=12,
+         logDYLD=20,
+         logTOPYLD=15,
+         PLTHT=10) 
+```
+
+**Note:** using same seed and other params as original run with 34K SNPs, which took ~34hrs.
+
+### fun with debugging errors
+```{r ERROR - parent-wise CV - filter pt5 - 7K SNPs}
+#filterLevel<-"1Mb_50kb_pt5"
+filterLevel<-"1Mb_50kb_pt6"
+snps2keep<-snpsets %>% 
+  filter(Filter==filterLevel) %>% 
+  select(snps2keep) %>% 
+  unnest(snps2keep)
+grms<-list(A=snpsets %>% filter(Filter==filterLevel) %$% Amat[[1]], 
+           D=snpsets %>% filter(Filter==filterLevel) %$% Dmat[[1]])
+dosages<-dosages[,snps2keep$FULL_SNP_ID]
+haploMat<-haploMat[,snps2keep$FULL_SNP_ID]
+recombFreqMat<-recombFreqMat[snps2keep$FULL_SNP_ID,snps2keep$FULL_SNP_ID]
+rm(snpsets); gc()
+
+cvDirDom<-runParentWiseCrossVal(nrepeats=5,nfolds=5,seed=84,
+                                modelType="DirDom",
+                                ncores=20,nBLASthreads=5,
+                                outName=NULL,
+                                ped=ped,
+                                blups=blups,
+                                dosages=dosages,
+                                haploMat=haploMat,
+                                grms=grms,
+                                recombFreqMat = recombFreqMat,
+                                selInd = TRUE, SIwts = SIwts)
+saveRDS(cvDirDom,
+        file = here::here("output",
+                          paste0("cvDirDom_",filterLevel,"_predAccuracy.rds")))
+
+
+# > rlang::last_error()
+# <error/dplyr:::mutate_error>
+# Problem with `mutate()` column `modelOut`.
+# ℹ `modelOut = future_pmap(...)`.
+# ✖ error in evaluating the argument 'y' in selecting a method for function 'crossprod': system is computationally singular: reciprocal condition number = 1.84784e-16
+# Backtrace:
+# Run `rlang::last_trace()` to see the full context.
+# > rlang::last_trace()
+# <error/dplyr:::mutate_error>
+# Problem with `mutate()` column `modelOut`.
+# ℹ `modelOut = future_pmap(...)`.
+# ✖ error in evaluating the argument 'y' in selecting a method for function 'crossprod': system is computationally singular: reciprocal condition number = 1.84784e-16
+# Backtrace:
+#      █
+#   1. ├─global::runParentWiseCrossVal(...)
+#   2. │ └─global::getMarkEffs(...) code/parentWiseCrossVal.R:38:2
+#   3. │   └─`%>%`(...) code/parentWiseCrossVal.R:234:2
+#   4. ├─dplyr::mutate(...)
+#   5. ├─dplyr:::mutate.data.frame(...)
+#   6. │ └─dplyr:::mutate_cols(.data, ..., caller_env = caller_env())
+#   7. │   ├─base::withCallingHandlers(...)
+#   8. │   └─mask$eval_all_mutate(quo)
+#   9. ├─furrr::future_pmap(...)
+#  10. │ └─furrr:::furrr_pmap_template(...)
+#  11. │   └─furrr:::furrr_template(...)
+#  12. │     ├─future::value(futures)
+#  13. │     └─future:::value.list(futures)
+#  14. │       ├─future::resolve(...)
+#  15. │       └─future:::resolve.list(...)
+#  16. │         └─future:::signalConditionsASAP(obj, resignal = FALSE, pos = ii)
+#  17. │           └─future:::signalConditions(...)
+#  18. │             └─base::stop(condition)
+#  19. └─(function (e) ...
+# <error/simpleError>
+# error in evaluating the argument 'y' in selecting a method for function 'crossprod': system is computationally singular: reciprocal condition number = 1.84784e-16
+```
+
+```{r find and fix error}
+# nrepeats=5;nfolds=5;seed=84;modelType="DirDom";ncores=20;nBLASthreads=5; gid="GID"
+
+## the bug is inside fitModel() in markEffs() in runParentWiseCrossVal()
+
+parentfolds<-makeParentFolds(ped=ped,gid="GID",
+                             nrepeats=nrepeats,
+                             nfolds=nfolds,
+                             seed=seed)
+
+# markEffs<-getMarkEffs(parentfolds,blups=blups,gid=gid,modelType=modelType,
+#                       grms=grms,dosages=dosages,
+#                       ncores=ncores,nBLASthreads=nBLASthreads)
+
+# getMarkEffs<-function(parentfolds,blups,gid,modelType,grms,dosages,ncores,nBLASthreads=NULL){
+
+  traintestdata<-parentfolds %>%
+    dplyr::select(Repeat,Fold,trainset,testset) %>%
+    pivot_longer(c(trainset,testset),
+                 names_to = "Dataset",
+                 values_to = "sampleIDs") %>%
+    crossing(Trait=blups$Trait) %>%
+    left_join(blups) %>%
+    rename(blupsMat=blups)
+
+ #   fitModel<-function(sampleIDs,blupsMat,modelType,gid,grms,dosages,nBLASthreads,...){
+    # debug
+    # sampleIDs<-traintestdata$sampleIDs[[2]]; blupsMat<-traintestdata$blupsMat[[2]]
+
+    if(!is.null(nBLASthreads)) { RhpcBLASctl::blas_set_num_threads(nBLASthreads) }
+    # workers in plan(multisession) need this call internal to the function, it seems.
+
+    A<-grms[["A"]]
+    if(modelType %in% c("AD","DirDom")){ D<-grms[["D"]] }
+
+    trainingdata<-blupsMat %>%
+      dplyr::rename(gid=!!sym(gid)) %>%
+      filter(gid %in% sampleIDs)
+
+    trainingdata[[paste0(gid,"a")]]<-factor(trainingdata[["gid"]],
+                                            levels=rownames(A))
+    if(modelType %in% c("AD")){
+      trainingdata[[paste0(gid,"d")]]<-trainingdata[[paste0(gid,"a")]] }
+    if(modelType %in% c("DirDom")){
+      trainingdata[[paste0(gid,"d_star")]]<-trainingdata[[paste0(gid,"a")]] }
+
+    # Set-up random model statements
+    randFormula<-paste0("~vs(",gid,"a,Gu=A)")
+    if(modelType %in% c("AD")){
+      randFormula<-paste0(randFormula,"+vs(",gid,"d,Gu=D)") }
+    if(modelType=="DirDom"){
+      randFormula<-paste0(randFormula,"+vs(",gid,"d_star,Gu=D)")
+      f<-getPropHom(dosages)
+      trainingdata %<>% mutate(f=f[trainingdata$gid]) }
+
+    # Fixed model statements
+    fixedFomula<-ifelse(modelType=="DirDom",
+                        "drgBLUP ~1+f","drgBLUP ~1")
+    # Fit genomic prediction model
+    require(sommer)
+    fit <- sommer::mmer(fixed = as.formula(fixedFomula),
+                        random = as.formula(randFormula),
+                        weights = WT,
+                        data=trainingdata,
+                        date.warning = F)
+  # Backsolve SNP effects
+    # Compute allele sub effects
+    ## Every model has an additive random term
+    ga<-as.matrix(fit$U[[paste0("u:",gid,"a")]]$drgBLUP,ncol=1)
+    M<-centerDosage(dosages)
+```
+
+
+```{r ERROR HERE}
+#        if(modelType %in% c("DirDom")){
+      # model DirDom is a different add-dom partition,
+      ### add effects are not allele sub effects and gblups are not GEBV
+      addsnpeff<-backsolveSNPeff(Z=M,g=ga)
+# Error in h(simpleError(msg, call)) : 
+#   error in evaluating the argument 'y' in selecting a method for function 'crossprod': system is computationally singular: reciprocal condition number = 1.84784e-16
+```
+```{r backsolveSNPeff SAFER/FIXED?}
+backsolveSNPeff<-function(Z,g){
+  # New version of this function attempts to be
+  # robust to singularities that sometimes arisen
+  # should return "NA" if all else fails
+  
+  # debug: # Z=M; g=ga;
+  ZZt<-tcrossprod(Z);
+  # setting tol=rcond(ZZt) below seems to avoid compute-singularities
+  ## better than adding a small value to the diag of ZZt
+  bslv<-function(Z,ZZt,g){
+    return(crossprod(Z,solve(ZZt,tol = rcond(ZZt)))%*%g) }
+  possibly_bslv<-possibly(bslv,NA_real_)
+  bslv_out<-possibly_bslv(Z,ZZt,g)
+  
+  # last ditch attempt
+  if(!"matrix" %in% class(bslv_out)){
+    if(is.na(bslv_out)){
+      # try adding small diag to ZZt
+      diag(ZZt)<-diag(ZZt)+1e-8
+      bslv_out<-possibly_bslv(Z,ZZt,g) } }
+  # last LAST ditch attempt
+  if(!"matrix" %in% class(bslv_out)){  
+    if(is.na(bslv_out)){ 
+      # try adding slightly less small diag to ZZt
+      diag(ZZt)<-diag(ZZt)+1e-6
+      bslv_out<-possibly_bslv(Z,ZZt,g) } }
+  return(bslv_out)
+}
+```
+```{r WORKS NOW}
+addsnpeff<-backsolveSNPeff(Z=M,g=ga)
+# WORKS NOW
+```
+```{r follow the test through}
+#      ### dom effects are called d*, gd_star or domstar
+      ### because of the genome-wide homoz. term included in model
+      gd_star<-as.matrix(fit$U[[paste0("u:",gid,"d_star")]]$drgBLUP,ncol=1)
+      domdevMat_genotypic<-dose2domDevGenotypic(dosages)
+      domstar_snpeff<-backsolveSNPeff(Z=domdevMat_genotypic,g=gd_star)
+      ### b = the estimate (BLUE) for the genome-wide homoz. effect
+      b<-fit$Beta[fit$Beta$Effect=="f","Estimate"]
+      ### calc. domsnpeff including the genome-wide homoz. effect
+      ### divide the b effect up by number of SNPs and _subtract_ from domstar
+      domsnpeff<-domstar_snpeff-(b/length(domstar_snpeff))
+
+      ### allele substitution effects using a+d(q-p) where d=d*-b/p
+      p<-getAF(dosages)
+      q<-1-p
+```
+```{r}
+v1<-crossprod(Z,solve(ZZt,tol = rcond(ZZt)))%*%g
+diag(ZZt)<-diag(ZZt)+1e-8
+v2<-crossprod(Z,solve(ZZt))%*%g
+allelesubsnpeff1<-v1+(domsnpeff*(q-p))
+allelesubsnpeff2<-v2+(domsnpeff*(q-p))
+
+```
+```{r follow the test through}
+allelesubsnpeff<-addsnpeff+(domsnpeff*(q-p))
+    #}
+  # Gather the GBLUPs
+    # if(modelType %in% c("A","AD")){
+    #   gblups<-tibble(GID=as.character(names(fit$U[[paste0("u:",gid,"a")]]$drgBLUP)),
+    #                  GEBV=as.numeric(fit$U[[paste0("u:",gid,"a")]]$drgBLUP)) }
+    # if(modelType=="AD"){
+    #   gblups %<>% # compute GEDD (genomic-estimated dominance deviation)
+    #     mutate(GEDD=as.numeric(fit$U[[paste0("u:",gid,"d")]]$drgBLUP),
+    #            # compute GETGV
+    #            GETGV=rowSums(.[,grepl("GE",colnames(.))])) }
+ #   if(modelType=="DirDom"){
+      # re-calc the GBLUP, GEdomval using dom. effects where d=d*-b/p
+      ge_domval<-domdevMat_genotypic%*%domsnpeff
+      # calc. the GEBV using allele sub. effects where alpha=a+d(p-q), and d=d*-b/p
+```
+```{r}
+gebv1<-M%*%allelesubsnpeff1
+gebv2<-M%*%allelesubsnpeff2
+summary(gebv1); summary(gebv2)
+gebv<-gebv1
+```
+```{r follow the test through}
+#gebv<-M%*%allelesubsnpeff
+      # Tidy tibble of GBLUPs
+      gblups<-tibble(GID=as.character(names(fit$U[[paste0("u:",gid,"a")]]$drgBLUP)),
+                     GEadd=as.numeric(fit$U[[paste0("u:",gid,"a")]]$drgBLUP),
+                     GEdom_star=as.numeric(fit$U[[paste0("u:",gid,"d_star")]]$drgBLUP)) %>%
+        left_join(tibble(GID=rownames(ge_domval),GEdomval=as.numeric(ge_domval))) %>%
+        left_join(tibble(GID=rownames(gebv),GEBV=as.numeric(gebv))) %>%
+        # GETGV from GEadd + GEdomval
+        mutate(GETGV=GEadd+GEdomval)
+#    }
+```
+At this point, I think the strange GEBV - GETGV scale diff in the pt5 filtered snpset is peculiar to that dataset NOT my changes to backsolveSNPeff. Having checked, both the original backsolveSNPeff() function and the new one produce the same (or effectively identical) results on the corresponding chunk of the pt6 filtered snpset. The pt6 filtered set doesn't have this singularity problem, even though in both cases the dom var is 0. 
+
+
+
+
+### Attempt full runs again
+
+```{r parent-wise CV - filterLevel settings}
+# cbsulm15 - 112 cores, 512 GB RAM - 2021 Aug 3 - 10:41am
+filterLevel<-"1Mb_50kb_pt5"
+# cbsulm17 - 112 cores, 512 GB RAM - 2021 Aug 3 - 10:41am
+filterLevel<-"1Mb_50kb_pt6"
+
+# cbsulm29 - 104 cores, 512 GB RAM - 2021 Aug 3 - 10:41am
+filterLevel<-"1Mb_50kb_pt8"
+# cbsulm31 - 112 cores, 512 GB RAM - 2021 Aug 3 - 10:41am
+filterLevel<-"1Mb_50kb_pt9"
+```
+
+```{r code to run parent-wise CV for ea filter level}
+snps2keep<-snpsets %>% 
+  filter(Filter==filterLevel) %>% 
+  select(snps2keep) %>% 
+  unnest(snps2keep)
+grms<-list(A=snpsets %>% filter(Filter==filterLevel) %$% Amat[[1]], 
+           D=snpsets %>% filter(Filter==filterLevel) %$% Dmat[[1]])
+dosages<-dosages[,snps2keep$FULL_SNP_ID]
+haploMat<-haploMat[,snps2keep$FULL_SNP_ID]
+recombFreqMat<-recombFreqMat[snps2keep$FULL_SNP_ID,snps2keep$FULL_SNP_ID]
+rm(snpsets); gc()
+
+starttime<-proc.time()[3]
+cvDirDom<-runParentWiseCrossVal(nrepeats=5,nfolds=5,seed=84,
+                                modelType="DirDom",
+                                ncores=20,nBLASthreads=5,
+                                outName=NULL,
+                                ped=ped,
+                                blups=blups,
+                                dosages=dosages,
+                                haploMat=haploMat,
+                                grms=grms,
+                                recombFreqMat = recombFreqMat,
+                                selInd = TRUE, SIwts = SIwts)
+saveRDS(cvDirDom,
+        file = here::here("output",
+                          paste0("cvDirDom_",filterLevel,"_predAccuracy.rds")))
+endtime<-proc.time()[3]; print(paste0("Time elapsed: ",round((endtime-starttime)/60,3)," mins"))
+
+```
+
+
+## Standard CV of marker subsets
+```{r}
+require(tidyverse); require(magrittr); library(qs)
+
+# SOURCE CORE FUNCTIONS
+source(here::here("code","gmsFunctions.R"))
+source(here::here("code","predCrossVar.R"))
+
+# BLUPs
+blups<-readRDS(file=here::here("data","blups_forCrossVal.rds")) %>% 
+  dplyr::select(-varcomp) %>% 
+  rename(TrainingData=blups) # for compatibility with downstream functions
+
+# SELECTION INDEX WEIGHTS
+## from IYR+IK
+## note that not ALL predicted traits are on index
+SIwts<-c(logFYLD=20,
+         HI=10,
+         DM=15,
+         MCMDS=-10,
+         logRTNO=12,
+         logDYLD=20,
+         logTOPYLD=15,
+         PLTHT=10) 
+# LD-PRUNNED SNP SETS + GRMS
+snpsets<-qread(here::here("output","kinships_LDpruningSeries_2021Aug02.qs"),
+               nthreads = 56)
+
+# DOSAGE MATRIX (UNFILTERED)
+dosages<-readRDS(file=here::here("data","dosages_IITA_2021May13.rds"))
+
+```
+
+```{r standard CV - filterLevel settings}
+# running...
+# cbsulm18 - 88 cores, 512 GB RAM - 2021 Aug 3 - 1pm
+filterLevel<-"1Mb_50kb_pt5"
+
+# NOT YET RUN....
+
+# cbsulm - 112 cores, 512 GB RAM - 2021 Aug 3 - 
+filterLevel<-"1Mb_50kb_pt6"
+
+# cbsulm - 104 cores, 512 GB RAM - 2021 Aug 3 - 
+filterLevel<-"1Mb_50kb_pt8"
+# cbsulm - 112 cores, 512 GB RAM - 2021 Aug 3 - 
+filterLevel<-"1Mb_50kb_pt9"
+```
+
+```{r code to runCrossVal for ea filter level}
+snps2keep<-snpsets %>% 
+  filter(Filter==filterLevel) %>% 
+  select(snps2keep) %>% 
+  unnest(snps2keep)
+grms<-list(A=snpsets %>% filter(Filter==filterLevel) %$% Amat[[1]], 
+           D=snpsets %>% filter(Filter==filterLevel) %$% Dmat[[1]])
+dosages<-dosages[,snps2keep$FULL_SNP_ID]
+rm(snpsets); gc()
+
+starttime<-proc.time()[3]
+stdcv<-runCrossVal(blups=blups,
+                   modelType="DirDom",
+                   selInd=TRUE,SIwts=SIwts,
+                   grms=grms,dosages=dosages,
+                   nrepeats=5,nfolds=5,
+                   ncores=17,nBLASthreads=5,
+                   gid="GID",seed=42)
+saveRDS(stdcv,
+        here::here("output",
+                   paste0("stdcvDirDom_",filterLevel,"_predAccuracy.rds")))
+endtime<-proc.time()[3]; print(paste0("Time elapsed: ",round((endtime-starttime)/60,3)," mins"))
+
+```
+
+### [TO DO] Random sampling
+
+**Do this on read-in of the previously used "filtered" set**
+```{r}
+# library(tidyverse); library(magrittr); 
+# haps<-readRDS(file=here::here("data","haps_IITA_2021May13.rds"))
+# dosages<-readRDS(file=here::here("data","dosages_IITA_2021May13.rds"))
+# 
+# saveRDS(haps,file=here::here("data","haps_IITA_filtered_2021May13.rds"))
+# saveRDS(dosages,file=here::here("data","dosages_IITA_filtered_2021May13.rds"))
+
+```
+
 
 # [TO DO] PHG parent-wise cross-validation
 
