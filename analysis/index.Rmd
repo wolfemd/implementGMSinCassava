@@ -33,7 +33,7 @@ We will soon implement in [summer 2021 for planning fall crossing nurseries and 
 
 5.  Creation of a single-function interface to accomplish parent-wise cross-validation at `code/parentWiseCrossVal.R`. Provides estimates of (selection index) accuracy predicting family means and variances.
 
-6.  Upgraded the "standard" cross-validation function (`runCrossVal()`), used in previous genomic selection analyses (_e.g._ [IITA_2020GS CV](https://wolfemd.github.io/IITA_2020GS/06-Results.html#cross-validation-accuracy), [NRCRI_2021GS CV](https://wolfemd.github.io/NRCRI_2021GS/05-Results.html#Prediction_accuracy), [TARI_2020GS CV](https://wolfemd.github.io/TARI_2020GS/05-Results.html#Prediction_accuracy)), to measure selection index accuracy (via `selInd=` and `SIwts=` arguments) and added a `modelType="DirDom"` option.
+6.  Upgraded the "standard" cross-validation function (`runCrossVal()`), used in previous genomic selection analyses (*e.g.* [IITA_2020GS CV](https://wolfemd.github.io/IITA_2020GS/06-Results.html#cross-validation-accuracy), [NRCRI_2021GS CV](https://wolfemd.github.io/NRCRI_2021GS/05-Results.html#Prediction_accuracy), [TARI_2020GS CV](https://wolfemd.github.io/TARI_2020GS/05-Results.html#Prediction_accuracy)), to measure selection index accuracy (via `selInd=` and `SIwts=` arguments) and added a `modelType="DirDom"` option.
 
 # Analysis steps
 
@@ -53,10 +53,22 @@ We will soon implement in [summer 2021 for planning fall crossing nurseries and 
 
 6.  [Parent-wise and standard cross-validation](05-CrossValidation.html):
 
-    -   Compute parent-wise cross-validation folds using the validated pedigree. Fit models to get marker effects and make subsequent predictions of cross means and (co)variances.
-    -   **Models "AD"** (classic BV+DD partition of additive+dominance) and **"DirDom"** (genotypic add+dom partition with genome-wide homozygosity effect).
-    -   Include use of selection index weights to compute index accuracy.
-    -   Include new models and index predictions in standard fold cross-validation in addition to the parent-wise scheme / function.
+    -   All cross-validation analyses are here.
+
+    -   Features of the new procedures:
+
+        -   Compute parent-wise cross-validation folds using the validated pedigree. Fit models to get marker effects and make subsequent predictions of cross means and (co)variances.
+
+        -   **Models "AD"** (classic BV+DD partition of additive+dominance) and **"DirDom"** (genotypic add+dom partition with genome-wide homozygosity effect).
+
+        -   Include use of selection index weights to compute index accuracy.
+
+        -   Include new models and index predictions in standard fold cross-validation in addition to the parent-wise scheme / function.
+
+    -   Additional analyses:
+
+        -   [**Optimize marker density for speed**](https://wolfemd.github.io/implementGMSinCassava/05-CrossValidation.html#Optimize_marker_density_for_speed): Cross-variance prediction is slow, but significant speed gains can be made by using fewer markers for the predictions. Examine the speed benefit vs. accuracy cost trade-off. [**Results are here**](https://wolfemd.github.io/implementGMSinCassava/07-Results.html#Optimize_marker_density_for_speed).
+
     -   [ ] ***[Coming soon]*** Run cross-validation using both Beagle- vs. PHG-imputed and phased marker data to compare their quality.
 
 7.  [Genomic predictions](06-GenomicPredictions.html):
@@ -113,15 +125,13 @@ genomicPredictions_ModelDirDom.csv genomicMatePredictions_top121parents_ModelDir
 
 1.  **[In Progress]** PHG imputed and phased marker data
 
-2.  Cross-variance prediction is slow, but significant speed gains can be made by using fewer markers for the predictions. Examine the speed benefit vs. accuracy cost trade-off.
-
-3.  Improve mate selection accuracy by...
+2.  Improve mate selection accuracy by...
 
     -   Choice of genetic map? AWC's map? Sex specific maps?
     -   Multi-trait REML models, single-step, heterogeneous error and/or of the other usual possibilities,
     -   and/or a return to the compute intense Bayesian posterior distribution approach used in the MS... might be more attractive with fewer markers to make compute faster
 
-4.  Simulation to explore factors impacting estimate of accuracy
+3.  Simulation to explore factors impacting estimate of accuracy
 
     -   Impact of phasing switch errors
     -   Quality and quantity of data available on parents
