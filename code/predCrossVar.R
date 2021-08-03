@@ -446,10 +446,32 @@ remove_invariant<-function(M){
 #' Za<-centerDosage(M)
 #' snpeff<-backsolveSNPeff(Za,ga)
 backsolveSNPeff<-function(Z,g){
-  ZZt<-tcrossprod(Z)
-  diag(ZZt)<-diag(ZZt)+1e-8
-  bslvEffs<-crossprod(Z,solve(ZZt))%*%g
-  return(bslvEffs)
+  # New version of this function attempts to be
+  # robust to singularities that sometimes arisen
+  # should return "NA" if all else fails
+
+  # debug: # Z=M; g=ga;
+  ZZt<-tcrossprod(Z);
+  # setting tol=rcond(ZZt) below seems to avoid compute-singularities
+  ## better than adding a small value to the diag of ZZt
+  bslv<-function(Z,ZZt,g){
+    return(crossprod(Z,solve(ZZt,tol = rcond(ZZt)))%*%g) }
+  possibly_bslv<-possibly(bslv,NA_real_)
+  bslv_out<-possibly_bslv(Z,ZZt,g)
+
+  # last ditch attempt
+  if(!"matrix" %in% class(bslv_out)){
+    if(is.na(bslv_out)){
+      # try adding small diag to ZZt
+      diag(ZZt)<-diag(ZZt)+1e-8
+      bslv_out<-possibly_bslv(Z,ZZt,g) } }
+  # last LAST ditch attempt
+  if(!"matrix" %in% class(bslv_out)){
+    if(is.na(bslv_out)){
+      # try adding slightly less small diag to ZZt
+      diag(ZZt)<-diag(ZZt)+1e-6
+      bslv_out<-possibly_bslv(Z,ZZt,g) } }
+  return(bslv_out)
 }
 
 #' genoVarCovarMatFunc
