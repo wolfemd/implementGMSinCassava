@@ -19,6 +19,7 @@ The summaries below correspond to the results of [analyses outlined here](https:
 1.  [Preliminary summaries] of the population, the data, results of pedigree validation,
 2.  [Prediction accuracy estimates]
 3.  [Genomic Predictions] and [Genomic mate selection].
+4.  [Optimize marker density for speed]: Test whether marker density can be reduced to save compute time (enabling us to predict more crosses) without sacrificing prediction accuracy. Use both standard and parent-wise cross-validation and LD-based pruning of markers. 
 
 # Preliminary summaries
 
@@ -887,6 +888,380 @@ top50crosses %>%
 top50crosses %>% 
   rmarkdown::paged_table()
 ```
+
+# Optimize marker density for speed
+
+Test whether marker density can be reduced to save compute time (enabling us to predict more crosses) without sacrificing prediction accuracy. Use both standard and parent-wise cross-validation and LD-based pruning of markers.  Analyses are documented [here](https://wolfemd.github.io/implementGMSinCassava/05-CrossValidation.html#Optimize_marker_density_for_speed).
+
+### Selection index
+
+```{r}
+library(ggdist)
+accuracy<-list.files(path = here::here("output")) %>% 
+  grep("_predAccuracy",.,value = T) %>% 
+  grep("_1Mb_50kb_pt|cvDirDom_5rep5fold_|stdcv_DirDom_",.,value = T) %>% 
+  tibble(Filename=.) %>% 
+  mutate(CVtype=ifelse(grepl("stdcv",Filename),"StandardCV","ParentwiseCV"),
+         Filter=gsub("_predAccuracy.rds","",Filename),
+         Filter=gsub("cvDirDom_|stdcvDirDom_","",Filter),
+         Filter=ifelse(Filter %in% c("5rep5fold","stdcv_DirDom"),"50snp_25snp_pt98",Filter),
+         results=map(Filename,~readRDS(here::here("output",.))))
+accuracy %<>% 
+  mutate(results=map2(CVtype,results,function(CVtype,results){ 
+    if(CVtype=="ParentwiseCV"){
+      out<-results$meanPredAccuracy %>% 
+        bind_rows(results$meanPredAccuracy) %>% 
+        filter(Trait=="SELIND") %>% 
+        mutate(VarComp=gsub("Mean","",predOf),
+               predOf="CrossMean") %>% 
+        bind_rows(results$varPredAccuracy %>% 
+                    bind_rows(results$varPredAccuracy) %>% 
+                    filter(Trait1=="SELIND") %>% 
+                    rename(Trait=Trait1) %>% 
+                    select(-Trait2) %>% 
+                    mutate(VarComp=gsub("Var","",predOf),
+                           predOf="CrossVar")) %>% 
+        select(-predVSobs) }
+    if(CVtype=="StandardCV"){
+      out<-results %>% 
+        select(-splits,-seeds) %>% 
+        unnest(accuracyEstOut) %>% 
+        select(-predVSobs) %>% 
+        filter(Trait=="SELIND") %>% 
+        rename(Repeat=repeats,Fold=id,VarComp=predOf,AccuracyEst=Accuracy) %>% 
+        mutate(Repeat=paste0("Repeat",Repeat),
+               VarComp=gsub("GE","",VarComp),
+               predOf="IndivPerformance",
+               modelType="DirDom")
+    }
+    return(out) }))
+```
+
+```{r}
+accuracy %<>% 
+  left_join(tribble(~Filter,~Nsnp,~ParentwiseRuntime,
+        "50snp_25snp_pt98",34981,34.5,
+        "1Mb_50kb_pt9",20645,10.65,
+        "1Mb_50kb_pt8",15342,7.14,
+        "1Mb_50kb_pt6",9501,5.28,
+        "1Mb_50kb_pt5",7412,4.42)) %>% 
+  unnest(results)
+accuracy %<>% 
+  mutate(predOf=factor(predOf,levels=c("IndivPerformance","CrossMean","CrossVar")),
+         VarComp=factor(VarComp,levels=c("BV","TGV")))
+plottheme<-theme(axis.text.x = element_blank(),
+        axis.title.x = element_blank(),
+        strip.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.title = element_text(face='bold',color = 'black'),
+        strip.text.x = element_text(face='bold',color='black',size=14),
+        axis.text.y = element_text(face = 'bold',color='black'),
+        legend.text = element_text(face='bold'),
+        legend.position = 'bottom')
+```
+```{r}
+accuracy %>% 
+  ggplot(.,aes(x=VarComp,y=AccuracyEst,fill=VarComp)) +
+  ggdist::stat_halfeye(adjust=0.5,.width = 0,fill='gray',width=0.75) +  
+  geom_boxplot(width=0.12,notch = TRUE) +
+  ggdist::stat_dots(side = "left",justification = 1.1,dotsize=0.6)+
+  theme_bw() + 
+  scale_fill_manual(values = viridis::viridis(4)[1:2]) + 
+  geom_hline(data = accuracy %>% distinct(predOf) %>% filter(predOf=="CrossVar") %>% mutate(yint=0), 
+             aes(yintercept = yint), color='black', size=0.9) + 
+  plottheme + 
+  facet_grid(predOf~Nsnp,scales = 'free') + 
+  labs(title="Accuracy predicting performance on the Selection Index",
+       subtitle="Versus number of SNPs remaining after LD-pruning") 
+  # + coord_cartesian(xlim = c(1.05, NA))
+```
+
+Turn it into a line lot with Nsnp on x-axis. Lines grouped by Rep-Fold-VarComp
+```{r}
+accuracy %>% 
+  ggplot(.,aes(x=Nsnp,y=AccuracyEst,color=VarComp,group=paste0(Repeat,"_",Fold,"_",VarComp))) +
+  geom_point() + geom_line(alpha=0.85) + 
+  #ggdist::stat_halfeye(adjust=0.5,.width = 0,fill='gray',width=0.75) +  
+  #geom_boxplot(width=0.12,notch = TRUE) +
+  #ggdist::stat_dots(side = "left",justification = 1.1,dotsize=0.6)+
+  theme_bw() + 
+  scale_color_manual(values = viridis::viridis(4)[1:2]) + 
+  geom_hline(data = accuracy %>% distinct(predOf) %>% filter(predOf=="CrossVar") %>% mutate(yint=0), 
+             aes(yintercept = yint), color='black', size=0.9) + 
+  plottheme + theme(axis.text.x = element_text(face='bold'),
+                    axis.title.x = element_text(face='bold')) + 
+  facet_grid(predOf~.,scales = 'free') + 
+  labs(title="Accuracy predicting performance on the Selection Index",
+       subtitle="Versus number of SNPs remaining after LD-pruning") 
+  # + coord_cartesian(xlim = c(1.05, NA))
+```
+Cross variance accuracy seems to up !?? while CrossMean and Indiv Accuracy suddenly drop at the lowest level?
+
+Zoom in....
+```{r}
+accuracy %>% filter(predOf!="IndivPerformance",Nsnp<20000) %>% droplevels %>% 
+  ggplot(.,aes(x=Nsnp,y=AccuracyEst,color=VarComp,group=paste0(Repeat,"_",Fold,"_",VarComp))) +
+  geom_point(size=1.5) + geom_line(size=1.25,alpha=0.8) + 
+  #ggdist::stat_halfeye(adjust=0.5,.width = 0,fill='gray',width=0.75) +  
+  #geom_boxplot(width=0.12,notch = TRUE) +
+  #ggdist::stat_dots(side = "left",justification = 1.1,dotsize=0.6)+
+  theme_bw() + 
+  scale_color_manual(values = viridis::viridis(4)[1:2]) + 
+  geom_hline(data = accuracy %>% distinct(predOf) %>% filter(predOf=="CrossVar") %>% mutate(yint=0), 
+             aes(yintercept = yint), color='black', size=1.5) + 
+  plottheme + theme(axis.text.x = element_text(face='bold'),
+                    axis.title.x = element_text(face='bold')) + 
+  facet_grid(predOf~.,scales = 'free') + 
+  labs(title="Accuracy predicting performance on the Selection Index",
+       subtitle="Versus number of SNPs remaining after LD-pruning") 
+  # + coord_cartesian(xlim = c(1.05, NA))
+```
+
+### predVSobs plots 
+
+```{r}
+accuracy<-list.files(path = here::here("output")) %>% 
+  grep("_predAccuracy",.,value = T) %>% 
+  grep("_1Mb_50kb_pt|cvDirDom_5rep5fold_|stdcv_DirDom_",.,value = T) %>% 
+  tibble(Filename=.) %>% 
+  mutate(CVtype=ifelse(grepl("stdcv",Filename),"StandardCV","ParentwiseCV"),
+         Filter=gsub("_predAccuracy.rds","",Filename),
+         Filter=gsub("cvDirDom_|stdcvDirDom_","",Filter),
+         Filter=ifelse(Filter %in% c("5rep5fold","stdcv_DirDom"),"50snp_25snp_pt98",Filter),
+         results=map(Filename,~readRDS(here::here("output",.))))
+accuracy %<>% 
+  mutate(processed=map2(CVtype,results,function(CVtype,results){ 
+    if(CVtype=="ParentwiseCV"){
+      out<-results$meanPredAccuracy %>% 
+        bind_rows(results$meanPredAccuracy) %>% 
+        filter(Trait=="SELIND") %>% 
+        mutate(VarComp=gsub("Mean","",predOf),
+               predOf="CrossMean") %>% 
+        bind_rows(results$varPredAccuracy %>% 
+                    bind_rows(results$varPredAccuracy) %>% 
+                    filter(Trait1=="SELIND") %>% 
+                    rename(Trait=Trait1) %>% 
+                    select(-Trait2) %>% 
+                    mutate(VarComp=gsub("Var","",predOf),
+                           predOf="CrossVar")) %>% 
+        select(-predVSobs) }
+    if(CVtype=="StandardCV"){
+      out<-results %>% 
+        select(-splits,-seeds) %>% 
+        unnest(accuracyEstOut) %>% 
+        select(-predVSobs) %>% 
+        filter(Trait=="SELIND") %>% 
+        rename(Repeat=repeats,Fold=id,VarComp=predOf,AccuracyEst=Accuracy) %>% 
+        mutate(Repeat=paste0("Repeat",Repeat),
+               VarComp=gsub("GE","",VarComp),
+               predOf="IndivPerformance",
+               modelType="DirDom")
+    }
+    return(out) }))
+```
+```{r}
+forplot<-accuracy %>% 
+  filter(CVtype=="ParentwiseCV") %>% 
+  select(CVtype,Filter,results) %>%
+  mutate(results=map(results,~.$varPredAccuracy %>% 
+                       filter(Trait1=="SELIND") %>% 
+                       select(Repeat,Fold,predOf,predVSobs) %>% 
+                       unnest(predVSobs))) %>% 
+  left_join(tribble(~Filter,~Nsnp,~ParentwiseRuntime,
+        "50snp_25snp_pt98",34981,34.5,
+        "1Mb_50kb_pt9",20645,10.65,
+        "1Mb_50kb_pt8",15342,7.14,
+        "1Mb_50kb_pt6",9501,5.28,
+        "1Mb_50kb_pt5",7412,4.42)) %>% 
+  unnest(results) %>% 
+  mutate(predOf=factor(predOf,levels=c("VarBV","VarTGV")))
+plottheme<-theme(axis.text.x = element_blank(),
+        axis.title.x = element_blank(),
+        strip.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.title = element_text(face='bold',color = 'black'),
+        strip.text.x = element_text(face='bold',color='black',size=14),
+        axis.text.y = element_text(face = 'bold',color='black'),
+        legend.text = element_text(face='bold'),
+        legend.position = 'bottom')
+```
+
+Plot the predicted vs. obsered cross variances (on the SELIND) to see if there is anything informative about the lowest SNP set level....
+```{r}
+forplot %>% 
+  ggplot(.,aes(x=predVar,y=obsVar,size=famSize,color=predOf)) +
+  geom_point(alpha=0.6) + 
+  geom_abline(slope=1,color='darkred') + 
+  theme_bw() + 
+  scale_color_manual(values = viridis::viridis(4)[1:2]) + 
+  plottheme + 
+  facet_wrap(predOf~Nsnp,scales = 'free',nrow=2) + 
+  labs(title="Predicted vs. observed cross variances (selection index)",
+       subtitle="Versus number of SNPs remaining after LD-pruning") 
+  # + coord_cartesian(xlim = c(1.05, NA))
+```
+
+Nothing looks special at Nsnp=7412, but the scale is off...
+
+Next, make correlation matrices among the obsVar (and subsequently the predVar) at different Nsnp levels.
+
+Data.frame below shows two matrices, one for each VarBV and VarTGV (but the result they show is pretty much the same)...
+```{r}
+# obsVar cors
+forplot %>% 
+  select(-predVar,-ParentwiseRuntime,-Filter) %>% 
+  pivot_wider(names_from = "Nsnp",
+              names_prefix = "Nsnp",
+              values_from = "obsVar") %>% 
+  select(predOf,contains("Nsnp")) %>% 
+  nest(data=-predOf) %>% 
+  mutate(data=map(data,~cor(.,use = 'pairwise.complete.obs') %>% 
+              round(.,2) %>% as.data.frame %>% rownames_to_column(var = "Nsnp"))) %>% 
+  unnest(data)
+```
+
+Above table was for cor(obsVars). Below table for cor(predVars).
+```{r}
+# predVar cors
+forplot %>% 
+  select(-obsVar,-ParentwiseRuntime,-Filter) %>% 
+  pivot_wider(names_from = "Nsnp",
+              names_prefix = "Nsnp",
+              values_from = "predVar") %>% 
+  select(predOf,contains("Nsnp")) %>% 
+  nest(data=-predOf) %>% 
+  mutate(data=map(data,~cor(.,use = 'pairwise.complete.obs') %>% 
+              round(.,2) %>% as.data.frame %>% rownames_to_column(var = "Nsnp"))) %>% 
+  unnest(data)
+```
+
+**Summary:** Both predVar and obsVar cor. to the max SNP (~34K) decline only slightly and until 9501, then plummet at the lowest 7412. 
+
+The problem is worst for the obsVar by far.
+
+### Accuracy of filtered varPreds with all SNPs validating
+
+Next, re-measure the varPred (and later meanPred) accuracy using the obsVar (family sample variances in GBLUPs) from the full SNP set (~34K) as the validation for each of the filtered subsets predVar values, this should give the most stable and in-my-view correct measure of loss (or gain) due to in varPred accuracy due to reducing Nsnp. 
+
+```{r}
+recalculated_accuracy<-forplot %>% 
+  select(-obsVar,-ParentwiseRuntime) %>% 
+  left_join(forplot %>% 
+              filter(Filter=="50snp_25snp_pt98") %>% 
+              select(-predVar,-Nsnp,-ParentwiseRuntime,-Filter)) %>% 
+      nest(predVSobs=c(sireID,damID,predVar,obsVar,famSize)) %>%
+    mutate(AccuracyEst=map_dbl(predVSobs,function(predVSobs){
+      out<-psych::cor.wt(predVSobs[,c("predVar","obsVar")],
+                         w = predVSobs$famSize) %$% r[1,2] %>%
+        round(.,3)
+      return(out) })) %>% 
+  select(-predVSobs) 
+recalculated_accuracy %>% 
+  ggplot(.,aes(x=Nsnp,y=AccuracyEst,color=predOf,group=paste0(Repeat,"_",Fold,"_",predOf))) +
+  geom_point() + geom_line(alpha=0.85) + 
+  theme_bw() + 
+  scale_color_manual(values = viridis::viridis(4)[1:2]) + 
+  geom_hline(yintercept=0, color='black', size=0.9) + 
+  plottheme + theme(axis.text.x = element_text(face='bold'),
+                    axis.title.x = element_text(face='bold')) + 
+  facet_grid(predOf~.,scales = 'free') + 
+  labs(title="Recalculated var. pred. accuracy with max SNPs used for validation data",
+       subtitle="Versus number of SNPs remaining after LD-pruning") 
+```
+```{r}
+recalculated_accuracy %>% 
+    ggplot(.,aes(x=predOf,y=AccuracyEst,fill=predOf)) +
+ ggdist::stat_halfeye(adjust=0.5,.width = 0,fill='gray',width=0.75) +  
+  geom_boxplot(width=0.12,notch = TRUE) +
+  ggdist::stat_dots(side = "left",justification = 1.1,dotsize=0.6)+
+  theme_bw() + 
+  scale_fill_manual(values = viridis::viridis(4)[1:2]) + 
+  scale_color_manual(values = viridis::viridis(4)[1:2]) + 
+  geom_hline(yintercept=0, color='black', size=0.9) + 
+  plottheme + theme(axis.text.x = element_text(face='bold'),
+                    axis.title.x = element_text(face='bold')) + 
+  facet_grid(.~Nsnp,scales = 'free') + 
+  labs(title="Recalculated var. pred. accuracy with max SNPs used for validation data",
+       subtitle="Versus number of SNPs remaining after LD-pruning") 
+
+```
+
+The above two plots (line plot and boxplots) show that:
+
+1. After re-calculating accuracy against the full SNP set, the lowest level Nsnp=7412 is indeed significantly worse in agreement with the standard cross-validation _and_ the parent-wise CV cross-mean accuracy estimate. 
+2. Reduced SNP density actually seems to stable or even slightly improved variance prediction accuracy
+
+Time savings: 20K to 15K = 67%, 15K to 9.5K = 73% (49% over 20K)....not sure the 34 hrs for the original 34K markers is fair. I _think_ the code in that run did not use multi-thread BLAS for variance prediction.
+
+Last plot below just shows the re-calculated accuracy of CrossMean predictions, reinforcing that reduced SNP numbers provide stable predictions until the lowest level.
+
+```{r}
+forplotmeans<-accuracy %>% 
+  filter(CVtype=="ParentwiseCV") %>% 
+  select(CVtype,Filter,results) %>%
+  mutate(results=map(results,~.$meanPredAccuracy %>% 
+                       filter(Trait=="SELIND") %>% 
+                       select(Repeat,Fold,predOf,predVSobs) %>% 
+                       unnest(predVSobs))) %>% 
+  left_join(tribble(~Filter,~Nsnp,~ParentwiseRuntime,
+        "50snp_25snp_pt98",34981,34.5,
+        "1Mb_50kb_pt9",20645,10.65,
+        "1Mb_50kb_pt8",15342,7.14,
+        "1Mb_50kb_pt6",9501,5.28,
+        "1Mb_50kb_pt5",7412,4.42)) %>% 
+  unnest(results) %>% 
+  mutate(predOf=factor(predOf,levels=c("MeanBV","MeanTGV")))
+```
+
+```{r}
+forplotmeans %>% 
+  select(-obsMean,-ParentwiseRuntime) %>% 
+  left_join(forplotmeans %>% 
+              filter(Filter=="50snp_25snp_pt98") %>% 
+              select(-predMean,-Nsnp,-ParentwiseRuntime,-Filter)) %>% 
+      nest(predVSobs=c(sireID,damID,predMean,obsMean,famSize)) %>%
+    mutate(AccuracyEst=map_dbl(predVSobs,function(predVSobs){
+      out<-psych::cor.wt(predVSobs[,c("predMean","obsMean")],
+                         w = predVSobs$famSize) %$% r[1,2] %>%
+        round(.,3)
+      return(out) })) %>% 
+  select(-predVSobs) %>% 
+  ggplot(.,aes(x=Nsnp,y=AccuracyEst,color=predOf,group=paste0(Repeat,"_",Fold,"_",predOf))) +
+  geom_point() + geom_line(alpha=0.85) + 
+  theme_bw() + 
+  scale_color_manual(values = viridis::viridis(4)[1:2]) + 
+  geom_hline(yintercept=0, color='black', size=0.9) + 
+  plottheme + theme(axis.text.x = element_text(face='bold'),
+                    axis.title.x = element_text(face='bold')) + 
+  facet_grid(predOf~.,scales = 'free') + 
+  labs(title="Recalculated mean pred. accuracy with max SNPs used for validation data",
+       subtitle="Versus number of SNPs remaining after LD-pruning") 
+```
+
+### Recommendation:
+
+Based on the above examination of the accuracy using reduced SNP sets, I propose the following practical procedure:
+
+1. Fit genomic prediction models (`runGenomicPredictions()`) with _both_ the "full" SNP dataset (**full_set**) _and_ an LD-prunned dataset (**prunned_set**) using at maximum "1Mb_50kb_pt6" (`plink1.9 --indep-pairwise 1000 'kb' 50 0.6`).
+
+2. **[OPTION TO EVAL REDUCED SET BASED ON STANDARD CV ONLY]** Conduct standard _and_ parent-wise cross-validation with both sets
+
+3. Predict cross means using **full_set** _and_ **prunned_set**. Check their correlation. If suitable, proceed with variance prediction using the **prunned_set**. 
+
+4. Using chosen snp set, predict cross variances
+
+5. Select crosses based on the **full_set** mean _and_ (if relevant) the **prunned_set** variances to construct the cross usefulness criterion.
+
+
+
+
+
+
+
+
+
 
 # [FUTURE] Compare PHG-to-Beagle data
 
