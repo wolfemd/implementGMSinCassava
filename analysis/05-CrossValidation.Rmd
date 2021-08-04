@@ -917,17 +917,27 @@ At this point, I think the strange GEBV - GETGV scale diff in the pt5 filtered s
 ### Attempt full runs again
 
 ```{r parent-wise CV - filterLevel settings}
-# cbsulm15 - 112 cores, 512 GB RAM - 2021 Aug 3 - 10:41am
+# cbsulm15 - 112 cores, 512 GB RAM - 2021 Aug 3 - 4:20pm
 filterLevel<-"1Mb_50kb_pt5"
-# cbsulm17 - 112 cores, 512 GB RAM - 2021 Aug 3 - 10:41am
+# [1] "Accuracies predicted. Took  4.42406 hrs total.Goodbye!"
+# [1] "Time elapsed: 265.469 mins"
+
+# cbsulm17 - 112 cores, 512 GB RAM - 2021 Aug 3 - " "
 filterLevel<-"1Mb_50kb_pt6"
+# [1] "Accuracies predicted. Took  5.28384 hrs total.Goodbye!"
+# [1] "Time elapsed: 317.053 mins"
 
-# cbsulm29 - 104 cores, 512 GB RAM - 2021 Aug 3 - 10:41am
+# cbsulm29 - 104 cores, 512 GB RAM - 2021 Aug 3 - " "
 filterLevel<-"1Mb_50kb_pt8"
-# cbsulm31 - 112 cores, 512 GB RAM - 2021 Aug 3 - 10:41am
-filterLevel<-"1Mb_50kb_pt9"
-```
+# [1] "Accuracies predicted. Took  7.14035 hrs total.Goodbye!"
+# [1] "Time elapsed: 428.437 mins"
 
+# cbsulm31 - 112 cores, 512 GB RAM - 2021 Aug 3 - " " 
+filterLevel<-"1Mb_50kb_pt9"
+# [1] "Accuracies predicted. Took  10.65117 hrs total.Goodbye!"
+# [1] "Time elapsed: 639.087 mins"
+
+```
 ```{r code to run parent-wise CV for ea filter level}
 snps2keep<-snpsets %>% 
   filter(Filter==filterLevel) %>% 
@@ -996,16 +1006,12 @@ dosages<-readRDS(file=here::here("data","dosages_IITA_2021May13.rds"))
 ```{r standard CV - filterLevel settings}
 # running...
 # cbsulm18 - 88 cores, 512 GB RAM - 2021 Aug 3 - 1pm
-filterLevel<-"1Mb_50kb_pt5"
-
-# NOT YET RUN....
-
-# cbsulm - 112 cores, 512 GB RAM - 2021 Aug 3 - 
-filterLevel<-"1Mb_50kb_pt6"
-
-# cbsulm - 104 cores, 512 GB RAM - 2021 Aug 3 - 
-filterLevel<-"1Mb_50kb_pt8"
-# cbsulm - 112 cores, 512 GB RAM - 2021 Aug 3 - 
+filterLevel<-"1Mb_50kb_pt5" # [1] "Time elapsed: 131.09 mins"
+# cbsulm18 - 88 cores, 512 GB RAM - 2021 Aug 3 - 4pm
+filterLevel<-"1Mb_50kb_pt6" # [1] "Time elapsed: 131.54 mins"
+# cbsulm18 - 88 cores, 512 GB RAM - 2021 Aug 3 - 7:15pm
+filterLevel<-"1Mb_50kb_pt8" # [1] "Time elapsed: 136.943 mins"
+# cbsulm18 - 88 cores, 512 GB RAM - 2021 Aug 3 - 10:20pm
 filterLevel<-"1Mb_50kb_pt9"
 ```
 
