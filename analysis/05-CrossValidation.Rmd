@@ -347,7 +347,7 @@ R
 
 Cross-variance prediction is slow, but significant speed gains can be made by using fewer markers for the predictions. Examine the speed benefit vs. accuracy cost trade-off.
 
-## LD pruning to achieve lower marker numbers
+## LD-pruning to reduce SNP numbers
 
 Two ways to accomplish reduced marker number: (1) random sample, (2) LD-pruning ([as in the preprocessing step _here_](https://wolfemd.github.io/implementGMSinCassava/04-PreprocessDataFiles.html#Variant_filters)). 
 
@@ -667,255 +667,6 @@ SIwts<-c(logFYLD=20,
 
 **Note:** using same seed and other params as original run with 34K SNPs, which took ~34hrs.
 
-### fun with debugging errors
-```{r ERROR - parent-wise CV - filter pt5 - 7K SNPs}
-#filterLevel<-"1Mb_50kb_pt5"
-filterLevel<-"1Mb_50kb_pt6"
-snps2keep<-snpsets %>% 
-  filter(Filter==filterLevel) %>% 
-  select(snps2keep) %>% 
-  unnest(snps2keep)
-grms<-list(A=snpsets %>% filter(Filter==filterLevel) %$% Amat[[1]], 
-           D=snpsets %>% filter(Filter==filterLevel) %$% Dmat[[1]])
-dosages<-dosages[,snps2keep$FULL_SNP_ID]
-haploMat<-haploMat[,snps2keep$FULL_SNP_ID]
-recombFreqMat<-recombFreqMat[snps2keep$FULL_SNP_ID,snps2keep$FULL_SNP_ID]
-rm(snpsets); gc()
-
-cvDirDom<-runParentWiseCrossVal(nrepeats=5,nfolds=5,seed=84,
-                                modelType="DirDom",
-                                ncores=20,nBLASthreads=5,
-                                outName=NULL,
-                                ped=ped,
-                                blups=blups,
-                                dosages=dosages,
-                                haploMat=haploMat,
-                                grms=grms,
-                                recombFreqMat = recombFreqMat,
-                                selInd = TRUE, SIwts = SIwts)
-saveRDS(cvDirDom,
-        file = here::here("output",
-                          paste0("cvDirDom_",filterLevel,"_predAccuracy.rds")))
-
-
-# > rlang::last_error()
-# <error/dplyr:::mutate_error>
-# Problem with `mutate()` column `modelOut`.
-# ℹ `modelOut = future_pmap(...)`.
-# ✖ error in evaluating the argument 'y' in selecting a method for function 'crossprod': system is computationally singular: reciprocal condition number = 1.84784e-16
-# Backtrace:
-# Run `rlang::last_trace()` to see the full context.
-# > rlang::last_trace()
-# <error/dplyr:::mutate_error>
-# Problem with `mutate()` column `modelOut`.
-# ℹ `modelOut = future_pmap(...)`.
-# ✖ error in evaluating the argument 'y' in selecting a method for function 'crossprod': system is computationally singular: reciprocal condition number = 1.84784e-16
-# Backtrace:
-#      █
-#   1. ├─global::runParentWiseCrossVal(...)
-#   2. │ └─global::getMarkEffs(...) code/parentWiseCrossVal.R:38:2
-#   3. │   └─`%>%`(...) code/parentWiseCrossVal.R:234:2
-#   4. ├─dplyr::mutate(...)
-#   5. ├─dplyr:::mutate.data.frame(...)
-#   6. │ └─dplyr:::mutate_cols(.data, ..., caller_env = caller_env())
-#   7. │   ├─base::withCallingHandlers(...)
-#   8. │   └─mask$eval_all_mutate(quo)
-#   9. ├─furrr::future_pmap(...)
-#  10. │ └─furrr:::furrr_pmap_template(...)
-#  11. │   └─furrr:::furrr_template(...)
-#  12. │     ├─future::value(futures)
-#  13. │     └─future:::value.list(futures)
-#  14. │       ├─future::resolve(...)
-#  15. │       └─future:::resolve.list(...)
-#  16. │         └─future:::signalConditionsASAP(obj, resignal = FALSE, pos = ii)
-#  17. │           └─future:::signalConditions(...)
-#  18. │             └─base::stop(condition)
-#  19. └─(function (e) ...
-# <error/simpleError>
-# error in evaluating the argument 'y' in selecting a method for function 'crossprod': system is computationally singular: reciprocal condition number = 1.84784e-16
-```
-
-```{r find and fix error}
-# nrepeats=5;nfolds=5;seed=84;modelType="DirDom";ncores=20;nBLASthreads=5; gid="GID"
-
-## the bug is inside fitModel() in markEffs() in runParentWiseCrossVal()
-
-parentfolds<-makeParentFolds(ped=ped,gid="GID",
-                             nrepeats=nrepeats,
-                             nfolds=nfolds,
-                             seed=seed)
-
-# markEffs<-getMarkEffs(parentfolds,blups=blups,gid=gid,modelType=modelType,
-#                       grms=grms,dosages=dosages,
-#                       ncores=ncores,nBLASthreads=nBLASthreads)
-
-# getMarkEffs<-function(parentfolds,blups,gid,modelType,grms,dosages,ncores,nBLASthreads=NULL){
-
-  traintestdata<-parentfolds %>%
-    dplyr::select(Repeat,Fold,trainset,testset) %>%
-    pivot_longer(c(trainset,testset),
-                 names_to = "Dataset",
-                 values_to = "sampleIDs") %>%
-    crossing(Trait=blups$Trait) %>%
-    left_join(blups) %>%
-    rename(blupsMat=blups)
-
- #   fitModel<-function(sampleIDs,blupsMat,modelType,gid,grms,dosages,nBLASthreads,...){
-    # debug
-    # sampleIDs<-traintestdata$sampleIDs[[2]]; blupsMat<-traintestdata$blupsMat[[2]]
-
-    if(!is.null(nBLASthreads)) { RhpcBLASctl::blas_set_num_threads(nBLASthreads) }
-    # workers in plan(multisession) need this call internal to the function, it seems.
-
-    A<-grms[["A"]]
-    if(modelType %in% c("AD","DirDom")){ D<-grms[["D"]] }
-
-    trainingdata<-blupsMat %>%
-      dplyr::rename(gid=!!sym(gid)) %>%
-      filter(gid %in% sampleIDs)
-
-    trainingdata[[paste0(gid,"a")]]<-factor(trainingdata[["gid"]],
-                                            levels=rownames(A))
-    if(modelType %in% c("AD")){
-      trainingdata[[paste0(gid,"d")]]<-trainingdata[[paste0(gid,"a")]] }
-    if(modelType %in% c("DirDom")){
-      trainingdata[[paste0(gid,"d_star")]]<-trainingdata[[paste0(gid,"a")]] }
-
-    # Set-up random model statements
-    randFormula<-paste0("~vs(",gid,"a,Gu=A)")
-    if(modelType %in% c("AD")){
-      randFormula<-paste0(randFormula,"+vs(",gid,"d,Gu=D)") }
-    if(modelType=="DirDom"){
-      randFormula<-paste0(randFormula,"+vs(",gid,"d_star,Gu=D)")
-      f<-getPropHom(dosages)
-      trainingdata %<>% mutate(f=f[trainingdata$gid]) }
-
-    # Fixed model statements
-    fixedFomula<-ifelse(modelType=="DirDom",
-                        "drgBLUP ~1+f","drgBLUP ~1")
-    # Fit genomic prediction model
-    require(sommer)
-    fit <- sommer::mmer(fixed = as.formula(fixedFomula),
-                        random = as.formula(randFormula),
-                        weights = WT,
-                        data=trainingdata,
-                        date.warning = F)
-  # Backsolve SNP effects
-    # Compute allele sub effects
-    ## Every model has an additive random term
-    ga<-as.matrix(fit$U[[paste0("u:",gid,"a")]]$drgBLUP,ncol=1)
-    M<-centerDosage(dosages)
-```
-
-
-```{r ERROR HERE}
-#        if(modelType %in% c("DirDom")){
-      # model DirDom is a different add-dom partition,
-      ### add effects are not allele sub effects and gblups are not GEBV
-      addsnpeff<-backsolveSNPeff(Z=M,g=ga)
-# Error in h(simpleError(msg, call)) : 
-#   error in evaluating the argument 'y' in selecting a method for function 'crossprod': system is computationally singular: reciprocal condition number = 1.84784e-16
-```
-```{r backsolveSNPeff SAFER/FIXED?}
-backsolveSNPeff<-function(Z,g){
-  # New version of this function attempts to be
-  # robust to singularities that sometimes arisen
-  # should return "NA" if all else fails
-  
-  # debug: # Z=M; g=ga;
-  ZZt<-tcrossprod(Z);
-  # setting tol=rcond(ZZt) below seems to avoid compute-singularities
-  ## better than adding a small value to the diag of ZZt
-  bslv<-function(Z,ZZt,g){
-    return(crossprod(Z,solve(ZZt,tol = rcond(ZZt)))%*%g) }
-  possibly_bslv<-possibly(bslv,NA_real_)
-  bslv_out<-possibly_bslv(Z,ZZt,g)
-  
-  # last ditch attempt
-  if(!"matrix" %in% class(bslv_out)){
-    if(is.na(bslv_out)){
-      # try adding small diag to ZZt
-      diag(ZZt)<-diag(ZZt)+1e-8
-      bslv_out<-possibly_bslv(Z,ZZt,g) } }
-  # last LAST ditch attempt
-  if(!"matrix" %in% class(bslv_out)){  
-    if(is.na(bslv_out)){ 
-      # try adding slightly less small diag to ZZt
-      diag(ZZt)<-diag(ZZt)+1e-6
-      bslv_out<-possibly_bslv(Z,ZZt,g) } }
-  return(bslv_out)
-}
-```
-```{r WORKS NOW}
-addsnpeff<-backsolveSNPeff(Z=M,g=ga)
-# WORKS NOW
-```
-```{r follow the test through}
-#      ### dom effects are called d*, gd_star or domstar
-      ### because of the genome-wide homoz. term included in model
-      gd_star<-as.matrix(fit$U[[paste0("u:",gid,"d_star")]]$drgBLUP,ncol=1)
-      domdevMat_genotypic<-dose2domDevGenotypic(dosages)
-      domstar_snpeff<-backsolveSNPeff(Z=domdevMat_genotypic,g=gd_star)
-      ### b = the estimate (BLUE) for the genome-wide homoz. effect
-      b<-fit$Beta[fit$Beta$Effect=="f","Estimate"]
-      ### calc. domsnpeff including the genome-wide homoz. effect
-      ### divide the b effect up by number of SNPs and _subtract_ from domstar
-      domsnpeff<-domstar_snpeff-(b/length(domstar_snpeff))
-
-      ### allele substitution effects using a+d(q-p) where d=d*-b/p
-      p<-getAF(dosages)
-      q<-1-p
-```
-```{r}
-v1<-crossprod(Z,solve(ZZt,tol = rcond(ZZt)))%*%g
-diag(ZZt)<-diag(ZZt)+1e-8
-v2<-crossprod(Z,solve(ZZt))%*%g
-allelesubsnpeff1<-v1+(domsnpeff*(q-p))
-allelesubsnpeff2<-v2+(domsnpeff*(q-p))
-
-```
-```{r follow the test through}
-allelesubsnpeff<-addsnpeff+(domsnpeff*(q-p))
-    #}
-  # Gather the GBLUPs
-    # if(modelType %in% c("A","AD")){
-    #   gblups<-tibble(GID=as.character(names(fit$U[[paste0("u:",gid,"a")]]$drgBLUP)),
-    #                  GEBV=as.numeric(fit$U[[paste0("u:",gid,"a")]]$drgBLUP)) }
-    # if(modelType=="AD"){
-    #   gblups %<>% # compute GEDD (genomic-estimated dominance deviation)
-    #     mutate(GEDD=as.numeric(fit$U[[paste0("u:",gid,"d")]]$drgBLUP),
-    #            # compute GETGV
-    #            GETGV=rowSums(.[,grepl("GE",colnames(.))])) }
- #   if(modelType=="DirDom"){
-      # re-calc the GBLUP, GEdomval using dom. effects where d=d*-b/p
-      ge_domval<-domdevMat_genotypic%*%domsnpeff
-      # calc. the GEBV using allele sub. effects where alpha=a+d(p-q), and d=d*-b/p
-```
-```{r}
-gebv1<-M%*%allelesubsnpeff1
-gebv2<-M%*%allelesubsnpeff2
-summary(gebv1); summary(gebv2)
-gebv<-gebv1
-```
-```{r follow the test through}
-#gebv<-M%*%allelesubsnpeff
-      # Tidy tibble of GBLUPs
-      gblups<-tibble(GID=as.character(names(fit$U[[paste0("u:",gid,"a")]]$drgBLUP)),
-                     GEadd=as.numeric(fit$U[[paste0("u:",gid,"a")]]$drgBLUP),
-                     GEdom_star=as.numeric(fit$U[[paste0("u:",gid,"d_star")]]$drgBLUP)) %>%
-        left_join(tibble(GID=rownames(ge_domval),GEdomval=as.numeric(ge_domval))) %>%
-        left_join(tibble(GID=rownames(gebv),GEBV=as.numeric(gebv))) %>%
-        # GETGV from GEadd + GEdomval
-        mutate(GETGV=GEadd+GEdomval)
-#    }
-```
-At this point, I think the strange GEBV - GETGV scale diff in the pt5 filtered snpset is peculiar to that dataset NOT my changes to backsolveSNPeff. Having checked, both the original backsolveSNPeff() function and the new one produce the same (or effectively identical) results on the corresponding chunk of the pt6 filtered snpset. The pt6 filtered set doesn't have this singularity problem, even though in both cases the dom var is 0. 
-
-
-
-
-### Attempt full runs again
-
 ```{r parent-wise CV - filterLevel settings}
 # cbsulm15 - 112 cores, 512 GB RAM - 2021 Aug 3 - 4:20pm
 filterLevel<-"1Mb_50kb_pt5"
@@ -938,6 +689,7 @@ filterLevel<-"1Mb_50kb_pt9"
 # [1] "Time elapsed: 639.087 mins"
 
 ```
+
 ```{r code to run parent-wise CV for ea filter level}
 snps2keep<-snpsets %>% 
   filter(Filter==filterLevel) %>% 
@@ -1037,19 +789,6 @@ saveRDS(stdcv,
         here::here("output",
                    paste0("stdcvDirDom_",filterLevel,"_predAccuracy.rds")))
 endtime<-proc.time()[3]; print(paste0("Time elapsed: ",round((endtime-starttime)/60,3)," mins"))
-
-```
-
-### [TO DO] Random sampling
-
-**Do this on read-in of the previously used "filtered" set**
-```{r}
-# library(tidyverse); library(magrittr); 
-# haps<-readRDS(file=here::here("data","haps_IITA_2021May13.rds"))
-# dosages<-readRDS(file=here::here("data","dosages_IITA_2021May13.rds"))
-# 
-# saveRDS(haps,file=here::here("data","haps_IITA_filtered_2021May13.rds"))
-# saveRDS(dosages,file=here::here("data","dosages_IITA_filtered_2021May13.rds"))
 
 ```
 
